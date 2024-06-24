@@ -35,6 +35,7 @@ const builds = {
     entry: resolve('web/entry-runtime.js'),
     dest: resolve('dist/vue.runtime.esm.js'),
     format: 'umd',
+    env: 'development',
     banner
   },
 }

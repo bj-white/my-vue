@@ -32,3 +32,7 @@ export function makeMap (str, expectsLowerCase) {
 }
 
 export function noop () {}
+
+export function isObject (obj) {
+  return obj !== null && typeof obj === 'object'
+}

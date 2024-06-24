@@ -44,6 +44,10 @@
 
   function noop () {}
 
+  function isObject (obj) {
+    return obj !== null && typeof obj === 'object'
+  }
+
   function mergeOptions (parent, child, vm) {
     if (typeof child === 'function') {
       child = child.options;
@@ -105,11 +109,51 @@
 
   var isServerRendering = function () {};
 
+  function createTextVNode () {}
+
+  function createEmptyVNode () {}
+
+  var VNode = function VNode (
+    tag,
+    data,
+    children,
+    text,
+    elm,
+    context,
+    componentOptions,
+    asyncFactory
+  ) {
+    this.tag = tag;
+    this.data = data;
+    this.children = children;
+    this.text = text;
+    this.elm = elm;
+    this.context = context;
+    this.componentOptions = componentOptions;
+    this.asyncFactory = asyncFactory;
+  };
+
   function set (target, key, val) {}
 
   function del (target, key) {}
 
   function defineReactive () {}
+
+  var Observer = function Observer () {};
+
+  function observe (value, asRootData) {
+    if (!isObject(value) || value instanceof VNode) {
+      return
+    }
+    var ob;
+    if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+      ob = value.__ob__;
+    }
+    if (asRootData && ob) {
+      ob.vmCount++;
+    }
+    return ob
+  }
 
   var uid = 0;
 
@@ -176,9 +220,6 @@
   function checkKeyCodes () {}
 
   function bindObjectProps () {}
-
-  function createTextVNode () {}
-  function createEmptyVNode () {}
 
   function resolveScopedSlots () {}
 
@@ -282,6 +323,7 @@
     Vue.nextTick = nextTick;
 
     Vue.observable = function (obj) {
+      observe(obj);
       return obj
     };
 

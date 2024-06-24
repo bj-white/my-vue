@@ -37,6 +37,14 @@
     })
     console.log(v) */
     console.dir(Vue)
+    const obj = {
+      name: 'name',
+      age: 11,
+      child: {
+        name: 'child'
+      }
+    }
+    console.log(Vue.observable(obj))
   </script>
 </body>
 </html>
