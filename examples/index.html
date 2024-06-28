@@ -46,9 +46,20 @@
         person: {
           age: 19
         }
-      }
+      },
+      _watchers: []
     }
-    console.log(Vue.observable(obj))
+    Vue.observable(obj)
+    console.log(obj)
+    const { Watcher } = Vue.util
+    new Watcher(
+      obj,
+      'age',
+      function () {
+        console.log('111111')
+      }
+    )
+    console.log(Watcher)
   </script>
 </body>
 </html>

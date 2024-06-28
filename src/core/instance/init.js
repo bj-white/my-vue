@@ -1,4 +1,5 @@
 import { mergeOptions } from '../util/index'
+import { initState } from './state'
 
 let uid = 0
 
@@ -16,6 +17,7 @@ export function initMinix (Vue) {
         vm
       )
     }
+    initState(vm)
   }
 }
 

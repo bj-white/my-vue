@@ -1,4 +1,5 @@
 import { set, del } from '../observer/index'
+import Watcher from '../observer/watcher'
 
 export function stateMixin (Vue) {
   const dataDef = {}
@@ -10,4 +11,16 @@ export function stateMixin (Vue) {
 
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
+}
+
+export function initState (vm) {
+  const opts = vm.$options
+  if (opts.computed) initComputed(vm, opts.computed)
+}
+
+function initComputed (vm, computed) {
+  const watchers = vm._computedWatchers = Object.create(null)
+  for (const key in computed) {
+    watchers[key] = new Watcher(vm)
+  }
 }

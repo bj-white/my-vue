@@ -135,6 +135,8 @@
     return _isServer
   };
 
+  var unicodeRegExp = /a-zA-Z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD/;
+
   function def (obj, key, val, enumerable) {
     Object.defineProperty(obj, key, {
       value: val,
@@ -142,6 +144,21 @@
       writable: true,
       configurable: true
     });
+  }
+
+  var bailRE = new RegExp(("[^" + (unicodeRegExp.source) + ".$_\\d]"));
+  function parsePath (path) {
+    if (bailRE.test(path)) {
+      return
+    }
+    var segments = path.split('.');
+    return function (obj) {
+      for (var i = 0; i < segments.length; i++) {
+        if (!obj) { return }
+        obj = obj[segments[i]];
+      }
+      return obj
+    }
   }
 
   var uid = 0;
@@ -172,6 +189,17 @@
   };
 
   Dep.target = null;
+  var targetStack = [];
+
+  function pushTarget (target) {
+    targetStack.push(target);
+    Dep.target = target;
+  }
+
+  function popTarget () {
+    targetStack.pop();
+    Dep.target = targetStack[targetStack.length - 1];
+  }
 
   window.Dep = Dep;
 
@@ -234,6 +262,7 @@
           return
         }
         val = newVal;
+        childOb = !shallow && observe(newVal);
         dep.notify();
       }
     });
@@ -279,29 +308,68 @@
   }
 
   var uid$1 = 0;
-
-  function initMinix (Vue) {
-    Vue.prototype._init = function (options) {
-      var vm = this;
-      vm._uid = uid$1++;
-      vm._isVue = true;
-      if (options && options._isComponent) {
-        console.log('todo.............');
-      } else {
-        vm.$options = mergeOptions(
-          resolveConstructorOptions(vm.constructor),
-          options || {});
-      }
-    };
-  }
-
-  function resolveConstructorOptions (Ctor) {
-    var options = Ctor.options;
-    if (Ctor.super) {
-      console.log('todo.............');
+  var Watcher = function Watcher (vm, expOrFn, cb, options, isRenderWatcher) {
+    this.vm = vm;
+    if (isRenderWatcher) {
+      vm._watcher = this;
     }
-    return options
-  }
+    vm._watchers.push(this);
+    if (options) {
+      this.deep = !!options.deep;
+      this.user = !!options.user;
+      this.lazy = !!options.lazy;
+      this.sync = !!options.sync;
+      this.before = options.before;
+    } else {
+      this.deep = this.user = this.lazy = this.sync = false;
+    }
+    this.cb = cb;
+    this.id = uid$1++;
+    this.active = true;
+    this.dirty = this.lazy;
+    this.deps = [];
+    this.newDeps = [];
+    this.depIds = new Set();
+    this.newDepIds = new Set();
+    this.expression =  expOrFn.toString()
+      ;
+    if (typeof expOrFn === 'function') {
+      this.getter = expOrFn;
+    } else {
+      this.getter = parsePath(expOrFn);
+      if (!this.getter) {
+        this.getter = noop;
+      }
+    }
+    this.value = this.lazy
+      ? undefined
+      : this.get();
+  };
+
+  Watcher.prototype.get = function get () {
+    pushTarget(this);
+    var value;
+    var vm = this.vm;
+    try {
+      value = this.getter.call(vm, vm);
+    } catch (e) {
+      throw e
+    } finally {
+      popTarget();
+      this.cleanupDeps();
+    }
+    return value
+  };
+
+  Watcher.prototype.cleanupDeps = function cleanupDeps () {};
+
+  Watcher.prototype.addDep = function addDep (dep) {
+    dep.addSub(this);
+  };
+
+  Watcher.prototype.update = function update () {
+    this.cb.call(this.vm, this.value);
+  };
 
   function stateMixin (Vue) {
     var dataDef = {};
@@ -313,6 +381,44 @@
 
     Vue.prototype.$set = set;
     Vue.prototype.$delete = del;
+  }
+
+  function initState (vm) {
+    var opts = vm.$options;
+    if (opts.computed) { initComputed(vm, opts.computed); }
+  }
+
+  function initComputed (vm, computed) {
+    var watchers = vm._computedWatchers = Object.create(null);
+    for (var key in computed) {
+      watchers[key] = new Watcher(vm);
+    }
+  }
+
+  var uid$2 = 0;
+
+  function initMinix (Vue) {
+    Vue.prototype._init = function (options) {
+      var vm = this;
+      vm._uid = uid$2++;
+      vm._isVue = true;
+      if (options && options._isComponent) {
+        console.log('todo.............');
+      } else {
+        vm.$options = mergeOptions(
+          resolveConstructorOptions(vm.constructor),
+          options || {});
+      }
+      initState(vm);
+    };
+  }
+
+  function resolveConstructorOptions (Ctor) {
+    var options = Ctor.options;
+    if (Ctor.super) {
+      console.log('todo.............');
+    }
+    return options
   }
 
   function eventsMixin (Vue) {
@@ -438,7 +544,8 @@
     Vue.util = {
       extend: extend,
       mergeOptions: mergeOptions,
-      defineReactive: defineReactive
+      defineReactive: defineReactive,
+      Watcher: Watcher
     };
 
     Vue.set = set;

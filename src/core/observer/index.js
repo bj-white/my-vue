@@ -37,6 +37,7 @@ export function defineReactive (obj, key, val, customSetter, shallow) {
         return
       }
       val = newVal
+      childOb = !shallow && observe(newVal)
       dep.notify()
     }
   })
@@ -62,6 +63,10 @@ export class Observer {
 }
 
 export let shouldObserve = true
+
+export function toggleObserving (value) {
+  shouldObserve = value
+}
 
 export function observe (value, asRootData) {
   if (!isObject(value) || value instanceof VNode) {
