@@ -20,6 +20,12 @@ export function looseIndexOf () {}
 
 export const no = () => false
 
+const _toString = Object.prototype.toString
+
+export function isPlainObject (obj) {
+  return _toString.call(obj) === '[object Object]'
+}
+
 export function makeMap (str, expectsLowerCase) {
   const map = Object.create(null)
   const list = str.split(',')
@@ -35,4 +41,13 @@ export function noop () {}
 
 export function isObject (obj) {
   return obj !== null && typeof obj === 'object'
+}
+
+export function remove (arr, item) {
+  if (arr.length) {
+    const index = arr.indexOf(item)
+    if (index > -1) {
+      return arr.splice(index, 1)
+    }
+  }
 }

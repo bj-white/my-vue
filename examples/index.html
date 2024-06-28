@@ -7,6 +7,7 @@
 <body>
   <div id="root"></div>
   <script src="../dist/vue.runtime.esm.js"></script>
+  <!-- <script src="../../vue/dist/vue.js"></script> -->
   <script>
     /* const v = new Vue({
       el: '#root',
@@ -41,7 +42,10 @@
       name: 'name',
       age: 11,
       child: {
-        name: 'child'
+        name: 'child',
+        person: {
+          age: 19
+        }
       }
     }
     console.log(Vue.observable(obj))

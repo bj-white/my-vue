@@ -31,6 +31,12 @@
 
   var no = function () { return false; };
 
+  var _toString = Object.prototype.toString;
+
+  function isPlainObject (obj) {
+    return _toString.call(obj) === '[object Object]'
+  }
+
   function makeMap (str, expectsLowerCase) {
     var map = Object.create(null);
     var list = str.split(',');
@@ -46,6 +52,15 @@
 
   function isObject (obj) {
     return obj !== null && typeof obj === 'object'
+  }
+
+  function remove (arr, item) {
+    if (arr.length) {
+      var index = arr.indexOf(item);
+      if (index > -1) {
+        return arr.splice(index, 1)
+      }
+    }
   }
 
   function mergeOptions (parent, child, vm) {
@@ -106,8 +121,59 @@
   function nextTick () {}
 
   var inBrowser = typeof window !== 'undefined';
+  var inWeex = typeof WXEnvironment !== 'undefined' && !!WXEnvironment.platform;
 
-  var isServerRendering = function () {};
+  var _isServer;
+  var isServerRendering = function () {
+    if (_isServer === undefined) {
+      if (!inBrowser && !inWeex && typeof global !== 'undefined') {
+        _isServer = global['process'] && global['process'].env.VUE_ENV === 'server';
+      } else {
+        _isServer = false;
+      }
+    }
+    return _isServer
+  };
+
+  function def (obj, key, val, enumerable) {
+    Object.defineProperty(obj, key, {
+      value: val,
+      enumerable: !!enumerable,
+      writable: true,
+      configurable: true
+    });
+  }
+
+  var uid = 0;
+  var Dep = function Dep () {
+    this.id = uid++;
+    this.subs = [];
+  };
+
+  Dep.prototype.addSub = function addSub (sub) {
+    this.subs.push(sub);
+  };
+
+  Dep.prototype.removeSub = function removeSub (sub) {
+    remove(this.subs, sub);
+  };
+    
+  Dep.prototype.depend = function depend () {
+    if (Dep.target) {
+      Dep.target.addDep(this);
+    }
+  };
+
+  Dep.prototype.notify = function notify () {
+    var subs = this.subs.slice();
+    for (var i = 0; i < subs.length; i++) {
+      subs[i].update();
+    }
+  };
+
+  Dep.target = null;
+
+  window.Dep = Dep;
 
   function createTextVNode () {}
 
@@ -137,9 +203,58 @@
 
   function del (target, key) {}
 
-  function defineReactive () {}
+  function defineReactive (obj, key, val, customSetter, shallow) {
+    var dep = new Dep();
+    var property = Object.getOwnPropertyDescriptor(obj, key);
+    if (property && property.configurable === false) {
+      return
+    }
+    var getter = property && property.get;
+    var setter = property && property.set;
+    if ((!getter || setter) && arguments.length === 2) {
+      val = obj[key];
+    }
+    var childOb = !shallow && observe(val);
+    Object.defineProperty(obj, key, {
+      enumerable: true,
+      configurable: true,
+      get: function () {
+        var value = getter ? getter.call(obj) : val;
+        if (Dep.target) {
+          dep.depend();
+          if (childOb) {
+            childOb.dep.depend();
+          }
+        }
+        return value
+      },
+      set: function (newVal) {
+        var value = getter ? getter.call(obj) : val;
+        if (newVal === value) {
+          return
+        }
+        val = newVal;
+        dep.notify();
+      }
+    });
+  }
 
-  var Observer = function Observer () {};
+  var Observer = function Observer (value) {
+    this.value = value;
+    this.dep = new Dep();
+    this.vmCount = 0;
+    def(value, '__ob__', this);
+    if (Array.isArray(value)) ; else {
+      this.walk(value);
+    }
+  };
+
+  Observer.prototype.walk = function walk (obj) {
+    var keys = Object.keys(obj);
+    for (var i = 0; i < keys.length; i++) {
+      defineReactive(obj, keys[i]);
+    }
+  };
 
   function observe (value, asRootData) {
     if (!isObject(value) || value instanceof VNode) {
@@ -148,6 +263,14 @@
     var ob;
     if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
       ob = value.__ob__;
+    } else if (
+      
+      !isServerRendering() &&
+      (Array.isArray(value) || isPlainObject(value)) &&
+      Object.isExtensible(value) &&
+      !value._isVue
+    ) {
+      ob = new Observer(value);
     }
     if (asRootData && ob) {
       ob.vmCount++;
@@ -155,12 +278,12 @@
     return ob
   }
 
-  var uid = 0;
+  var uid$1 = 0;
 
   function initMinix (Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
-      vm._uid = uid++;
+      vm._uid = uid$1++;
       vm._isVue = true;
       if (options && options._isComponent) {
         console.log('todo.............');
