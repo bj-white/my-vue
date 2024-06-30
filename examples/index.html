@@ -6,11 +6,18 @@
 </head>
 <body>
   <div id="root"></div>
-  <script src="../dist/vue.runtime.esm.js"></script>
-  <!-- <script src="../../vue/dist/vue.js"></script> -->
+  <!-- <script src="../dist/vue.runtime.esm.js"></script> -->
+  <script src="../dist/vue1.js"></script>
   <script>
-    /* const v = new Vue({
+    console.dir(Vue)
+    const v = new Vue({
       el: '#root',
+      props: {
+        name: {
+          type: String,
+          default: 'white'
+        }
+      },
       data () {
         return {
           msg: 'hello world'
@@ -20,6 +27,9 @@
         comMsg () {
           return this.msg
         }
+      },
+      beforeCreate () {
+        console.log('beforeCreate================')
       },
       created () {
         console.log('created================')
@@ -32,34 +42,16 @@
           console.log(this.msg)
         }
       },
+      watch: {
+        msg (newValue) {
+          console.log(newValue, '============')
+        }
+      },
       render (h) {
         return h('div', this.msg)
       }
     })
-    console.log(v) */
-    console.dir(Vue)
-    const obj = {
-      name: 'name',
-      age: 11,
-      child: {
-        name: 'child',
-        person: {
-          age: 19
-        }
-      },
-      _watchers: []
-    }
-    Vue.observable(obj)
-    console.log(obj)
-    const { Watcher } = Vue.util
-    new Watcher(
-      obj,
-      'age',
-      function () {
-        console.log('111111')
-      }
-    )
-    console.log(Watcher)
+    console.log(v)
   </script>
 </body>
 </html>

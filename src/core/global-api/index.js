@@ -9,7 +9,6 @@ import { initUse } from './use'
 import { initMixin } from './mixin'
 import { initExtend } from './extend'
 import { initAssetRegisters } from './assets'
-import Watcher from '../observer/watcher'
 
 export function initGlobalAPI (Vue) {
   const configDef = {}
@@ -19,8 +18,7 @@ export function initGlobalAPI (Vue) {
   Vue.util = {
     extend,
     mergeOptions,
-    defineReactive,
-    Watcher
+    defineReactive
   }
 
   Vue.set = set

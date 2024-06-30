@@ -1,6 +1,14 @@
 import Dep from './dep'
 import VNode from '../vdom/vnode'
-import { isObject, hasOwn, isServerRendering, isPlainObject, def } from '../util/index'
+import { arrayMethods } from './array'
+import {
+  isObject,
+  hasOwn,
+  isServerRendering,
+  isPlainObject,
+  def,
+  hasProto
+} from '../util/index'
 
 export function set (target, key, val) {}
 
@@ -43,13 +51,21 @@ export function defineReactive (obj, key, val, customSetter, shallow) {
   })
 }
 
+function protoAugment (target, src) {
+  target.__proto__ = src
+}
+
 export class Observer {
   constructor (value) {
     this.value = value
     this.dep = new Dep()
     this.vmCount = 0
     def(value, '__ob__', this)
-    if (Array.isArray(value)) {} else {
+    if (Array.isArray(value)) {
+      if (hasProto) {
+        protoAugment(value, arrayMethods)
+      }
+    } else {
       this.walk(value)
     }
   }
@@ -58,6 +74,12 @@ export class Observer {
     const keys = Object.keys(obj)
     for (let i = 0; i < keys.length; i++) {
       defineReactive(obj, keys[i])
+    }
+  }
+
+  observeArray (items) {
+    for (let i = 0, l = items.length; i < l; i++) {
+      observe(items[i])
     }
   }
 }

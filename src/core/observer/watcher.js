@@ -57,10 +57,38 @@ export default class Watcher {
     return value
   }
 
-  cleanupDeps () {}
+  evaluate () {
+    this.value = this.get()
+    this.dirty = false
+  }
+
+  cleanupDeps () {
+    let i = this.deps.length
+    while (i--) {
+      const dep = this.deps[i]
+      if (!this.newDepIds.has(dep.id)) {
+        dep.removeSub(this)
+      }
+    }
+    let tmp = this.depIds
+    this.depIds = this.newDepIds
+    this.newDepIds = tmp
+    this.newDepIds.clear()
+    tmp = this.deps
+    this.deps = this.newDeps
+    this.newDeps = tmp
+    this.newDeps.length = 0
+  }
 
   addDep (dep) {
-    dep.addSub(this)
+    const id = dep.id
+    if (!this.newDepIds.has(id)) {
+      this.newDepIds.add(id)
+      this.newDeps.push(dep)
+      if (!this.depIds.has(id)) {
+        dep.addSub(this)
+      }
+    }
   }
 
   update () {

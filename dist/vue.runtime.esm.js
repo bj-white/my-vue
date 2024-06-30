@@ -21,6 +21,19 @@
     return to
   }
 
+  function cached (fn) {
+    var cache = Object.create(null);
+    return function cachedFn (str) {
+      var hit = cache[str];
+      return hit || (cache[str] = fn(str))
+    }
+  }
+
+  var camelizeRE = /-(\w)/g;
+  var camelize = cached(function (str) {
+    return str.replace(camelizeRE, function (_, c) { return c ? c.toUpperCase() : ''; })
+  });
+
   function toNumber () {}
 
   function toString () {}
@@ -63,6 +76,181 @@
     }
   }
 
+  var config = ({
+    optionMergeStrategies: Object.create(null),
+    silent: false,
+    mustUseProp: no,
+    isReservedTag: no,
+    isReservedAttr: no,
+    getTagNamespace: noop
+  });
+
+  var ASSET_TYPES = [
+    'component',
+    'directive',
+    'filter'
+  ];
+
+  var LIFECYCLE_HOOKS = [
+    'beforeCreate',
+    'created',
+    'beforeMount',
+    'mounted',
+    'beforeUpdate',
+    'updated',
+    'beforeDestroy',
+    'destroyed',
+    'activated',
+    'deactivated',
+    'errorCaptured',
+    'serverPrefetch'
+  ];
+
+  var hasProto = '__proto__' in {};
+
+  var inBrowser = typeof window !== 'undefined';
+  var inWeex = typeof WXEnvironment !== 'undefined' && !!WXEnvironment.platform;
+
+  var nativeWatch = ({}).watch;
+
+  var _isServer;
+  var isServerRendering = function () {
+    if (_isServer === undefined) {
+      if (!inBrowser && !inWeex && typeof global !== 'undefined') {
+        _isServer = global['process'] && global['process'].env.VUE_ENV === 'server';
+      } else {
+        _isServer = false;
+      }
+    }
+    return _isServer
+  };
+
+  var strats = config.optionMergeStrategies;
+
+  function mergeDataOrFn (parentVal, childVal, vm) {
+    if (!vm) {
+      if (!childVal) {
+        return parentVal
+      }
+      if (!parentVal) {
+        return childVal
+      }
+      return function mergedDataFn () {
+        return mergeData(
+          typeof childVal === 'function' ? childVal.call(this, this) : childVal,
+          typeof parentVal === 'function' ? parentVal.call(this, this) : parentVal
+        )
+      }
+    } else {
+      return function mergedInstanceDataFn () {
+        var instanceData = typeof childVal === 'function'
+          ? childVal.call(vm, vm)
+          : childVal;
+        var defaultData = typeof parentVal === 'function'
+          ? parentVal.call(vm, vm)
+          : parentVal;
+        if (instanceData) {
+          return mergeData(instanceData, defaultData)
+        } else {
+          return defaultData
+        }
+      }
+    }
+  }
+
+  function mergeData (to, from) {
+    if (!from) { return to }
+    console.log('todo....................');
+  }
+
+  strats.data = function (parentVal, childVal, vm) {
+    if (!vm) {
+      if (childVal && typeof childVal !== 'function') {
+        return parentVal
+      }
+      return mergeDataOrFn(parentVal, childVal)
+    }
+    return mergeDataOrFn(parentVal, childVal, vm)
+  };
+
+  function mergeHook (parentVal, childVal) {
+    var res = childVal
+      ? parentVal
+        ? parentVal.concat(childVal)
+        : Array.isArray(childVal)
+          ? childVal
+          : [childVal]
+      : parentVal;
+    return res
+      ? dedupeHooks(res)
+      : res
+  }
+
+  function dedupeHooks (hooks) {
+    var res = [];
+    for (var i = 0; i < hooks.length; i++) {
+      if (res.indexOf(hooks[i]) === -1) {
+        res.push(hooks[i]);
+      }
+    }
+    return res
+  }
+
+  LIFECYCLE_HOOKS.forEach(function (hook) {
+    strats[hook] = mergeHook;
+  });
+
+  function mergeAssets (parentVal, childVal, vm, key) {
+    var res = Object.create(parentVal || null);
+    if (childVal) {
+      return extend(res, childVal)
+    } else {
+      return res
+    }
+  }
+
+  ASSET_TYPES.forEach(function (type) {
+    strats[type + 's'] = mergeAssets;
+  });
+
+  strats.watch = function (parentVal, childVal, vm, key) {
+    if (parentVal === nativeWatch) { parentVal = undefined; }
+    if (childVal === nativeWatch) { childVal = undefined; }
+    if (!childVal) { return Object.create(parentVal || null) }
+    if (!parentVal) { return childVal }
+    var ret = {};
+    extend(ret, parentVal);
+    for (var key$1 in childVal) {
+      var parent = ret[key$1];
+      var child = childVal[key$1];
+      if (parent && !Array.isArray(parent)) {
+        parent = [parent];
+      }
+      ret[key$1] = parent
+        ? parent.concat(child)
+        : Array.isArray(child) ? child : [child];
+    }
+    return ret
+  };
+
+  strats.props =
+  strats.methods =
+  strats.inject =
+  strats.computed = function (parentVal, childVal, vm, key) {
+    if (!parentVal) { return childVal }
+    var ret = Object.create(null);
+    extend(ret, parentVal);
+    if (childVal) { extend(ret, childVal); }
+    return ret
+  };
+  strats.provide = mergeDataOrFn;
+
+  var defaultStrat = function (parentVal, childVal) {
+    return childVal === undefined
+      ? parentVal
+      : childVal
+  };
+
   function mergeOptions (parent, child, vm) {
     if (typeof child === 'function') {
       child = child.options;
@@ -84,7 +272,7 @@
     var options = {};
     var key;
     for (key in parent) {
-      console.log('todo.............');
+      mergeField(key);
     }
     for (key in child) {
       if (!hasOwn(parent, key)) {
@@ -92,23 +280,42 @@
       }
     }
     function mergeField (key) {
-      console.log(key);
+      var strat = strats[key] || defaultStrat;
+      options[key] = strat(parent[key], child[key], vm, key);
     }
     return options
   }
 
   function normalizeProps (options, vm) {
     var props = options.props;
-    if (props) {
-      console.log('todo.............');
+    if (!props) { return }
+    var res = {};
+    var i, val, name;
+    if (Array.isArray(props)) {
+      i = props.length;
+      while (i--) {
+        val = props[i];
+        if (typeof val === 'string') {
+          name = camelize(val);
+          res[name] = { type: null };
+        }
+      }
+    } else if (isPlainObject(props)) {
+      for (var key in props) {
+        val = props[key];
+        name = camelize(key);
+        res[name] = isPlainObject(val)
+          ? val
+          : { type: val };
+      }
     }
+    options.props = res;
   }
 
   function normalizeInject (options, vm) {
     var inject = options.inject;
-    if (inject) {
-      console.log('todo.............');
-    }
+    if (!inject) { return }
+    console.log('todo.............');
   }
 
   function normalizeDirectives (options) {
@@ -119,21 +326,6 @@
   }
 
   function nextTick () {}
-
-  var inBrowser = typeof window !== 'undefined';
-  var inWeex = typeof WXEnvironment !== 'undefined' && !!WXEnvironment.platform;
-
-  var _isServer;
-  var isServerRendering = function () {
-    if (_isServer === undefined) {
-      if (!inBrowser && !inWeex && typeof global !== 'undefined') {
-        _isServer = global['process'] && global['process'].env.VUE_ENV === 'server';
-      } else {
-        _isServer = false;
-      }
-    }
-    return _isServer
-  };
 
   var unicodeRegExp = /a-zA-Z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD/;
 
@@ -161,47 +353,60 @@
     }
   }
 
+  function invokeWithErrorHandling (handler, context, args, vm, info) {
+    var res;
+    try {
+      res = args ? handler.apply(context, args) : handler.call(context);
+      if (res) {
+        console.log('todo..........');
+      }
+    } catch (e) {
+      console.log('todo...........');
+    }
+    return res
+  }
+
   var uid = 0;
-  var Dep = function Dep () {
+  var Dep$1 = function Dep () {
     this.id = uid++;
     this.subs = [];
   };
 
-  Dep.prototype.addSub = function addSub (sub) {
+  Dep$1.prototype.addSub = function addSub (sub) {
     this.subs.push(sub);
   };
 
-  Dep.prototype.removeSub = function removeSub (sub) {
+  Dep$1.prototype.removeSub = function removeSub (sub) {
     remove(this.subs, sub);
   };
     
-  Dep.prototype.depend = function depend () {
-    if (Dep.target) {
-      Dep.target.addDep(this);
+  Dep$1.prototype.depend = function depend () {
+    if (Dep$1.target) {
+      Dep$1.target.addDep(this);
     }
   };
 
-  Dep.prototype.notify = function notify () {
+  Dep$1.prototype.notify = function notify () {
     var subs = this.subs.slice();
     for (var i = 0; i < subs.length; i++) {
       subs[i].update();
     }
   };
 
-  Dep.target = null;
+  Dep$1.target = null;
   var targetStack = [];
 
   function pushTarget (target) {
     targetStack.push(target);
-    Dep.target = target;
+    Dep$1.target = target;
   }
 
   function popTarget () {
     targetStack.pop();
-    Dep.target = targetStack[targetStack.length - 1];
+    Dep$1.target = targetStack[targetStack.length - 1];
   }
 
-  window.Dep = Dep;
+  window.Dep = Dep$1;
 
   function createTextVNode () {}
 
@@ -227,12 +432,49 @@
     this.asyncFactory = asyncFactory;
   };
 
+  var arrayProto = Array.prototype;
+  var arrayMethods = Object.create(arrayProto);
+
+  var methodsToPatch = [
+    'push',
+    'pop',
+    'shift',
+    'unshift',
+    'splice',
+    'sort',
+    'reverse'
+  ];
+
+  methodsToPatch.forEach(function (method) {
+    var original = arrayProto[method];
+    def(arrayMethods, method, function mutator () {
+      var args = [], len = arguments.length;
+      while ( len-- ) args[ len ] = arguments[ len ];
+
+      var result = original.apply(this, args);
+      var ob = this.__ob__;
+      var inserted;
+      switch (method) {
+        case 'push':
+        case 'unshift':
+          inserted = args;
+          break
+        case 'splice':
+          inserted = args.slice(2);
+          break
+      }
+      if (inserted) { ob.observeArray(inserted); }
+      ob.dep.notify();
+      return result
+    });
+  });
+
   function set (target, key, val) {}
 
   function del (target, key) {}
 
   function defineReactive (obj, key, val, customSetter, shallow) {
-    var dep = new Dep();
+    var dep = new Dep$1();
     var property = Object.getOwnPropertyDescriptor(obj, key);
     if (property && property.configurable === false) {
       return
@@ -248,7 +490,7 @@
       configurable: true,
       get: function () {
         var value = getter ? getter.call(obj) : val;
-        if (Dep.target) {
+        if (Dep$1.target) {
           dep.depend();
           if (childOb) {
             childOb.dep.depend();
@@ -268,12 +510,20 @@
     });
   }
 
+  function protoAugment (target, src) {
+    target.__proto__ = src;
+  }
+
   var Observer = function Observer (value) {
     this.value = value;
-    this.dep = new Dep();
+    this.dep = new Dep$1();
     this.vmCount = 0;
     def(value, '__ob__', this);
-    if (Array.isArray(value)) ; else {
+    if (Array.isArray(value)) {
+      if (hasProto) {
+        protoAugment(value, arrayMethods);
+      }
+    } else {
       this.walk(value);
     }
   };
@@ -285,6 +535,18 @@
     }
   };
 
+  Observer.prototype.observeArray = function observeArray (items) {
+    for (var i = 0, l = items.length; i < l; i++) {
+      observe(items[i]);
+    }
+  };
+
+  var shouldObserve = true;
+
+  function toggleObserving (value) {
+    shouldObserve = value;
+  }
+
   function observe (value, asRootData) {
     if (!isObject(value) || value instanceof VNode) {
       return
@@ -293,7 +555,7 @@
     if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
       ob = value.__ob__;
     } else if (
-      
+      shouldObserve &&
       !isServerRendering() &&
       (Array.isArray(value) || isPlainObject(value)) &&
       Object.isExtensible(value) &&
@@ -305,6 +567,66 @@
       ob.vmCount++;
     }
     return ob
+  }
+
+  function validateProp (key, propOptions, propsData, vm) {
+    var prop = propOptions[key];
+    var absent = !hasOwn(propsData, key);
+    var value = propsData[key];
+    var booleanIndex = getTypeIndex(Boolean, prop.type);
+    if (booleanIndex > -1) {
+      if (absent && !hasOwn(prop, 'default')) {
+        value = false;
+      } else if (value === '' || value === hyphenate(key)) {
+        console.log('todo...............');
+      }
+    }
+    if (value === undefined) {
+      value = getPropDefaultValue(vm, prop, key);
+      var prevShouldObserve = shouldObserve;
+      toggleObserving(true);
+      toggleObserving(prevShouldObserve);
+    }
+    return value
+  }
+
+  function getPropDefaultValue (vm, prop, key) {
+    if (!hasOwn(prop, 'default')) {
+      return undefined
+    }
+    var def = prop.default;
+    if (vm && vm.$options.propsData &&
+      vm.$options.propsData[key] === undefined &&
+      vm._props[key] !== undefined
+    ) {
+      return vm._props[key]
+    }
+    return typeof def === 'function' && getType(prop.type) !== 'Function'
+      ? def.call(vm)
+      : def
+  }
+
+  var functionTypeCheckRE = /^\s*function (\w+)/;
+
+  function getType (fn) {
+    var match = fn && fn.toString().match(functionTypeCheckRE);
+    return match ? match[1] : ''
+  }
+
+  function isSameType (a, b) {
+    return getType(a) === getType(b)
+  }
+
+  function getTypeIndex (type, expectedTypes) {
+    if (!Array.isArray(expectedTypes)) {
+      return isSameType(expectedTypes, type) ? 0 : -1
+    }
+    for (var i = 0, len = expectedTypes.length; i < len; i++) {
+      if (isSameType(expectedTypes[i], type)) {
+        return i
+      }
+    }
+    return -1
   }
 
   var uid$1 = 0;
@@ -331,8 +653,7 @@
     this.newDeps = [];
     this.depIds = new Set();
     this.newDepIds = new Set();
-    this.expression =  expOrFn.toString()
-      ;
+    this.expression =  '';
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn;
     } else {
@@ -361,14 +682,49 @@
     return value
   };
 
-  Watcher.prototype.cleanupDeps = function cleanupDeps () {};
+  Watcher.prototype.evaluate = function evaluate () {
+    this.value = this.get();
+    this.dirty = false;
+  };
+
+  Watcher.prototype.cleanupDeps = function cleanupDeps () {
+    var i = this.deps.length;
+    while (i--) {
+      var dep = this.deps[i];
+      if (!this.newDepIds.has(dep.id)) {
+        dep.removeSub(this);
+      }
+    }
+    var tmp = this.depIds;
+    this.depIds = this.newDepIds;
+    this.newDepIds = tmp;
+    this.newDepIds.clear();
+    tmp = this.deps;
+    this.deps = this.newDeps;
+    this.newDeps = tmp;
+    this.newDeps.length = 0;
+  };
 
   Watcher.prototype.addDep = function addDep (dep) {
-    dep.addSub(this);
+    var id = dep.id;
+    if (!this.newDepIds.has(id)) {
+      this.newDepIds.add(id);
+      this.newDeps.push(dep);
+      if (!this.depIds.has(id)) {
+        dep.addSub(this);
+      }
+    }
   };
 
   Watcher.prototype.update = function update () {
     this.cb.call(this.vm, this.value);
+  };
+
+  var sharedPropertyDefinition = {
+    enumerable: true,
+    configurable: true,
+    get: noop,
+    set: noop
   };
 
   function stateMixin (Vue) {
@@ -384,48 +740,93 @@
   }
 
   function initState (vm) {
+    vm._watchers = [];
     var opts = vm.$options;
+    if (opts.props) { initProps(vm, opts.props); }
     if (opts.computed) { initComputed(vm, opts.computed); }
   }
 
+  function proxy (target, sourceKey, key) {
+    sharedPropertyDefinition.get = function proxyGetter () {
+      return this[sourceKey][key]
+    };
+    sharedPropertyDefinition.set = function proxySetter (val) {
+      this[sourceKey][key] = val;
+    };
+    Object.defineProperty(target, key, sharedPropertyDefinition);
+  }
+
+  function initProps (vm, propsOptions) {
+    var propsData = vm.$options.propsData || {};
+    var props = vm._props = {};
+    var keys = vm.$options._propKeys = [];
+    var isRoot = !vm.$parent;
+    if (!isRoot) {
+      toggleObserving(false);
+    }
+    for (var key in propsOptions) {
+      keys.push(key);
+      var value = validateProp(key, propsOptions, propsData, vm);
+      defineReactive(props, key, value);
+      if (!(key in vm)) {
+        proxy(vm, '_props', key);
+      }
+    }
+    toggleObserving(true);
+  }
+
+  var computedWatcherOptions = { lazy: true };
+
   function initComputed (vm, computed) {
     var watchers = vm._computedWatchers = Object.create(null);
+    var isSSR = isServerRendering();
     for (var key in computed) {
-      watchers[key] = new Watcher(vm);
+      var userDef = computed[key];
+      var getter = typeof userDef === 'function' ? userDef : userDef.get;
+      if (!isSSR) {
+        watchers[key] = new Watcher(
+          vm,
+          getter || noop,
+          noop,
+          computedWatcherOptions
+        );
+      }
+      if (!(key in vm)) {
+        defineComputed(vm, key, userDef);
+      }
     }
   }
 
-  var uid$2 = 0;
-
-  function initMinix (Vue) {
-    Vue.prototype._init = function (options) {
-      var vm = this;
-      vm._uid = uid$2++;
-      vm._isVue = true;
-      if (options && options._isComponent) {
-        console.log('todo.............');
-      } else {
-        vm.$options = mergeOptions(
-          resolveConstructorOptions(vm.constructor),
-          options || {});
-      }
-      initState(vm);
-    };
-  }
-
-  function resolveConstructorOptions (Ctor) {
-    var options = Ctor.options;
-    if (Ctor.super) {
+  function defineComputed (target, key, userDef) {
+    var shouldCache = !isServerRendering();
+    if (typeof userDef === 'function') {
+      sharedPropertyDefinition.get = shouldCache
+        ? createComputedGetter(key)
+        : createGetterInvoker();
+      sharedPropertyDefinition.set = noop;
+    } else {
       console.log('todo.............');
     }
-    return options
+    Object.defineProperty(target, key, sharedPropertyDefinition);
   }
 
-  function eventsMixin (Vue) {
-    Vue.prototype.$on = function () {};
-    Vue.prototype.$once = function () {};
-    Vue.prototype.$off = function () {};
-    Vue.prototype.$emit = function () {};
+  function createComputedGetter (key) {
+    return function computedGetter () {
+      var watcher = this._computedWatchers && this._computedWatchers[key];
+      if (watcher) {
+        if (watcher.dirty) {
+          watcher.evaluate();
+        }
+        if (Dep.target) {
+          console.log('todo..............');
+        }
+        return watcher.value
+      }
+    }
+  }
+
+  function createGetterInvoker (fn) {
+    console.log('todo.................');
   }
 
   function lifecycleMixin (Vue) {
@@ -435,6 +836,54 @@
   }
 
   function mountComponent () {}
+
+  function initLifecycle (vm) {
+    var options = vm.$options;
+    var parent = options.parent;
+    if (parent && !options.abstract) {
+      console.log('todo............');
+    }
+
+    vm.$parent = parent;
+    vm.$root = parent ? parent.$root : vm;
+
+    vm.$children = [];
+    vm.$refs = {};
+
+    vm._watcher = null;
+    vm._inactive = null;
+    vm._directInactive = false;
+    vm._isMounted = false;
+    vm._isDestroyed = false;
+    vm._isBeingDestroyed = false;
+  }
+
+  function callHook (vm, hook) {
+    pushTarget();
+    var handlers = vm.$options[hook];
+    if (handlers)  {
+      for (var i = 0, j = handlers.length; i < j; i++) {
+        invokeWithErrorHandling(handlers[i], vm, null);
+      }
+    }
+    popTarget();
+  }
+
+  function eventsMixin (Vue) {
+    Vue.prototype.$on = function () {};
+    Vue.prototype.$once = function () {};
+    Vue.prototype.$off = function () {};
+    Vue.prototype.$emit = function () {};
+  }
+
+  function initEvents (vm) {
+    vm._events = Object.create(null);
+    vm._hasHookEvent = false;
+    var listeners = vm.$options._parentListeners;
+    if (listeners) {
+      console.log('todo...............');
+    }
+  }
 
   function markOnce () {}
 
@@ -483,6 +932,81 @@
     Vue.prototype._render = function () {};
   }
 
+  function initRender (vm) {
+    vm._vnode = null;
+    vm._staticTrees = null;
+    var options = vm.$options;
+    var parentVnode = vm.$vnode = options._parentVnode;
+  }
+
+  function initInjections (vm) {
+    var result = resolveInject(vm.$options.inject);
+    if (result) {
+      console.log('todo..........');
+    }
+  }
+
+  function resolveInject (inject, vm) {
+    if (inject) {
+      console.log('todo............');
+    }
+  }
+
+  function initProvide (vm) {
+    var provide = vm.$options.provide;
+    if (provide) {
+      console.log('todo............');
+    }
+  }
+
+  var uid$2 = 0;
+
+  function initMinix (Vue) {
+    Vue.prototype._init = function (options) {
+      var vm = this;
+      vm._uid = uid$2++;
+      vm._isVue = true;
+      if (options && options._isComponent) {
+        console.log('todo.............');
+      } else {
+        vm.$options = mergeOptions(
+          resolveConstructorOptions(vm.constructor),
+          options || {},
+          vm
+        );
+      }
+      /* // todo...........
+      if ("production" !== 'production') {
+        initProxy(vm)
+      } else {
+        vm._renderProxy = vm
+      } */
+      vm._renderProxy = vm;
+      vm._self = vm;
+      initLifecycle(vm);
+      initEvents(vm);
+      initRender(vm);
+      callHook(vm, 'beforeCreate');
+      initInjections(vm);
+      initState(vm);
+      initProvide(vm);
+      callHook(vm, 'created');
+
+      /* // todo.............
+      if (vm.$options.el) {
+        vm.$mount(vm.$options.el)
+      } */
+    };
+  }
+
+  function resolveConstructorOptions (Ctor) {
+    var options = Ctor.options;
+    if (Ctor.super) {
+      console.log('todo.............');
+    }
+    return options
+  }
+
   function Vue (options) {
     this._init(options);
   }
@@ -492,21 +1016,6 @@
   eventsMixin(Vue);
   lifecycleMixin(Vue);
   renderMixin(Vue);
-
-  var config = ({
-    optionMergeStrategies: Object.create(null),
-    silent: false,
-    mustUseProp: no,
-    isReservedTag: no,
-    isReservedAttr: no,
-    getTagNamespace: noop
-  });
-
-  var ASSET_TYPES = [
-    'component',
-    'directive',
-    'filter'
-  ];
 
   var KeepAlive = {
     name: 'keep-alive',
@@ -544,8 +1053,7 @@
     Vue.util = {
       extend: extend,
       mergeOptions: mergeOptions,
-      defineReactive: defineReactive,
-      Watcher: Watcher
+      defineReactive: defineReactive
     };
 
     Vue.set = set;

@@ -10,6 +10,19 @@ export function extend (to, _from) {
   return to
 }
 
+export function cached (fn) {
+  const cache = Object.create(null)
+  return function cachedFn (str) {
+    const hit = cache[str]
+    return hit || (cache[str] = fn(str))
+  }
+}
+
+const camelizeRE = /-(\w)/g
+export const camelize = cached((str) => {
+  return str.replace(camelizeRE, (_, c) => c ? c.toUpperCase() : '')
+})
+
 export function toNumber () {}
 
 export function toString () {}
