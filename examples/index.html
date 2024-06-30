@@ -5,9 +5,13 @@
     <title>Document</title>
 </head>
 <body>
-  <div id="root"></div>
-  <!-- <script src="../dist/vue.runtime.esm.js"></script> -->
-  <script src="../dist/vue1.js"></script>
+  <div id="root">
+    <div v-for="item in obj.arr" @click="item.name = 'aaaaaa'">
+      {{item.name}}
+    </div>
+  </div>
+  <script src="../dist/vue.runtime.esm.js"></script>
+  <!-- <script src="../dist/vue1.js"></script> -->
   <script>
     console.dir(Vue)
     const v = new Vue({
@@ -20,7 +24,14 @@
       },
       data () {
         return {
-          msg: 'hello world'
+          msg: 'hello world',
+          obj: {
+            arr: [
+              {
+                name: 'aaa'
+              }
+            ]
+          }
         }
       },
       computed: {
@@ -47,9 +58,9 @@
           console.log(newValue, '============')
         }
       },
-      render (h) {
+      /* render (h) {
         return h('div', this.msg)
-      }
+      } */
     })
     console.log(v)
   </script>

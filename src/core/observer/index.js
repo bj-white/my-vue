@@ -65,6 +65,7 @@ export class Observer {
       if (hasProto) {
         protoAugment(value, arrayMethods)
       }
+      this.observeArray(value)
     } else {
       this.walk(value)
     }
