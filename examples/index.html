@@ -25,6 +25,8 @@
       data () {
         return {
           msg: 'hello world',
+          a: 1,
+          b: 2,
           obj: {
             arr: [
               {
@@ -37,6 +39,10 @@
       computed: {
         comMsg () {
           return this.msg
+        },
+        c () {
+          console.log('computed.............')
+          return this.a + this.b
         }
       },
       beforeCreate () {

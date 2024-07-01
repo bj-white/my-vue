@@ -29,6 +29,27 @@
     }
   }
 
+  function polyfillBind (fn, ctx) {
+    function boundFn (a) {
+      var l = arguments.length;
+      return l
+        ? l > 1
+          ? fn.apply(ctx, arguments)
+          : fn.call(ctx, a)
+        : fn.call(ctx)
+    }
+    boundFn._length = fn.length;
+    return boundFn
+  }
+
+  function nativeBind (fn, ctx) {
+    return fn.bind(ctx)
+  }
+
+  var bind = Function.prototype.bind
+    ? nativeBind
+    : polyfillBind;
+
   var camelizeRE = /-(\w)/g;
   var camelize = cached(function (str) {
     return str.replace(camelizeRE, function (_, c) { return c ? c.toUpperCase() : ''; })
@@ -351,6 +372,14 @@
       }
       return obj
     }
+  }
+
+  /**
+   * Check if a string starts with $ or _
+   */
+  function isReserved (str) {
+    var c = (str + '').charCodeAt(0);
+    return c === 0x24 || c === 0x5F
   }
 
   function invokeWithErrorHandling (handler, context, args, vm, info) {
@@ -744,7 +773,54 @@
     vm._watchers = [];
     var opts = vm.$options;
     if (opts.props) { initProps(vm, opts.props); }
+    if (opts.methods) { initMethods(vm, opts.methods); }
+    if (opts.data) {
+      initData(vm);
+    } else {
+      observe(vm._data = {}, true);
+    }
     if (opts.computed) { initComputed(vm, opts.computed); }
+  }
+
+  function initData (vm) {
+    var data = vm.$options.data;
+    data = vm._data = typeof data === 'function'
+      ? getData(data, vm)
+      : data || {};
+    if (!isPlainObject(data)) {
+      data = {};
+    }
+    var keys = Object.keys(data);
+    var props = vm.$options.props;
+    var i = keys.length;
+    while (i--) {
+      var key = keys[i];
+      if (props && hasOwn(props, key)) {
+        console.log('todo...........');
+      } else if (!isReserved(key)) {
+        proxy(vm, '_data', key);
+      }
+    }
+    observe(data, true);
+  }
+
+  function getData (data, vm) {
+    pushTarget();
+    try {
+      return data.call(vm, vm)
+    } catch (e) {
+      console.log(e);
+      return {}
+    } finally {
+      popTarget();
+    }
+  }
+
+  function initMethods (vm, methods) {
+    var props = vm.$options.props;
+    for (var key in methods) {
+      vm[key] = typeof methods[key] !== 'function' ? noop : bind(methods[key], vm);
+    }
   }
 
   function proxy (target, sourceKey, key) {
