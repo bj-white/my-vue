@@ -6,15 +6,13 @@
 </head>
 <body>
   <div id="root">
-    <div v-for="item in obj.arr" @click="item.name = 'aaaaaa'">
-      {{item.name}}
-    </div>
+    <span id="span"></span>
   </div>
   <script src="../dist/vue.runtime.esm.js"></script>
   <!-- <script src="../dist/vue1.js"></script> -->
   <script>
     console.dir(Vue)
-    const v = new Vue({
+    const vm = new Vue({
       el: '#root',
       props: {
         name: {
@@ -68,7 +66,15 @@
         return h('div', this.msg)
       } */
     })
-    console.log(v)
+    console.log(vm)
+
+    const computedWatcherOptions = { lazy: false }
+    const { Watcher } = Vue.util
+    new Watcher(vm, 'a', setSpan, computedWatcherOptions)
+    function setSpan (value) {
+      console.log('span......')
+      document.querySelector('#span').innerHTML = value
+    }
   </script>
 </body>
 </html>

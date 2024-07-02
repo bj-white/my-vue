@@ -84,7 +84,7 @@
 
   function noop () {}
 
-  function isObject (obj) {
+  function isObject$1 (obj) {
     return obj !== null && typeof obj === 'object'
   }
 
@@ -632,7 +632,7 @@
   }
 
   function observe (value, asRootData) {
-    if (!isObject(value) || value instanceof VNode) {
+    if (!isObject$1(value) || value instanceof VNode) {
       return
     }
     var ob;
@@ -715,7 +715,10 @@
 
   var has = {};
   var flushing = false;
+  var queue = [];
   var waiting = false;
+  var index = 0;
+  var activatedChildren = [];
 
   var currentFlushTimestamp = 0;
 
@@ -732,17 +735,60 @@
     }
   }
 
+  function resetSchedulerState () {
+    index = queue.length = activatedChildren.length = 0;
+    has = {};
+    waiting = flushing = false;
+  }
+
   function flushSchedulerQueue () {
     currentFlushTimestamp = getNow();
     flushing = true;
+    var watcher, id;
+    queue.sort(function (a, b) { return a.id - b.id; });
+    for (index = 0; index < queue.length; index++) {
+      watcher = queue[index];
+      if (watcher.before) {
+        watcher.before();
+      }
+      id = watcher.id;
+      has[id] = null;
+      watcher.run();
+    }
+
+    var activatedQueue = activatedChildren.slice();
+    var updatedQueue = queue.slice();
+
+    resetSchedulerState();
+
+    callActivatedHooks(activatedQueue);
+    callUpdatedHooks(updatedQueue);
+  }
+
+  function callUpdatedHooks (queue) {
+    var i = queue.length;
+    while (i--) {
+      var watcher = queue[i];
+      var vm = watcher.vm;
+      if (vm._watcher && watcher && vm._isMounted && !vm._isDestroyed) {
+        console.log('todo...............');
+      }
+    }
+  }
+
+  function callActivatedHooks (queue) {
+    for (var i = 0; i < queue.length; i++) {
+      console.log('todo....................');
+    }
   }
 
   function queueWatcher (watcher) {
-    console.log(watcher);
     var id = watcher.id;
     if (has[id] == null) {
       has[id] = true;
-      if (!flushing) ; else {
+      if (!flushing) {
+        queue.push(watcher);
+      } else {
         console.log('todo..........');
       }
       if (!waiting) {
@@ -850,7 +896,22 @@
   };
 
   Watcher.prototype.run = function run () {
-    console.log('todo..................');
+    if (this.active) {
+      var value = this.get();
+      if (
+        value !== this.value ||
+        isObject(value) ||
+        this.deep
+      ) {
+        var oldValue = this.value;
+        this.value = value;
+        if (this.user) {
+          console.log('todo............');
+        } else {
+          this.cb.call(this.vm, value, oldValue);
+        }
+      }
+    }
   };
 
   var sharedPropertyDefinition = {
@@ -955,7 +1016,7 @@
     toggleObserving(true);
   }
 
-  var computedWatcherOptions = {};
+  var computedWatcherOptions = { lazy: true };
 
   function initComputed (vm, computed) {
     var watchers = vm._computedWatchers = Object.create(null);
@@ -1233,7 +1294,8 @@
     Vue.util = {
       extend: extend,
       mergeOptions: mergeOptions,
-      defineReactive: defineReactive
+      defineReactive: defineReactive,
+      Watcher: Watcher
     };
 
     Vue.set = set;

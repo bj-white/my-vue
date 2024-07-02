@@ -119,7 +119,7 @@ function initProps (vm, propsOptions) {
   toggleObserving(true)
 }
 
-const computedWatcherOptions = {}
+const computedWatcherOptions = { lazy: true }
 
 function initComputed (vm, computed) {
   const watchers = vm._computedWatchers = Object.create(null)

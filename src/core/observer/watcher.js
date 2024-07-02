@@ -103,6 +103,21 @@ export default class Watcher {
   }
 
   run () {
-    console.log('todo..................')
+    if (this.active) {
+      const value = this.get()
+      if (
+        value !== this.value ||
+        isObject(value) ||
+        this.deep
+      ) {
+        const oldValue = this.value
+        this.value = value
+        if (this.user) {
+          console.log('todo............')
+        } else {
+          this.cb.call(this.vm, value, oldValue)
+        }
+      }
+    }
   }
 }
