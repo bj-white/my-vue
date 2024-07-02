@@ -1,5 +1,6 @@
 import { parsePath, noop } from '../util/index'
 import { popTarget, pushTarget } from './dep'
+import { queueWatcher } from './scheduler'
 
 let uid = 0
 export default class Watcher {
@@ -92,6 +93,16 @@ export default class Watcher {
   }
 
   update () {
-    this.cb.call(this.vm, this.value)
+    if (this.lazy) {
+      this.dirty = true
+    } else if (this.sync) {
+      this.run()
+    } else {
+      queueWatcher(this)
+    }
+  }
+
+  run () {
+    console.log('todo..................')
   }
 }

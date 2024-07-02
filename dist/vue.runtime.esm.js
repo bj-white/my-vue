@@ -131,6 +131,10 @@
 
   var inBrowser = typeof window !== 'undefined';
   var inWeex = typeof WXEnvironment !== 'undefined' && !!WXEnvironment.platform;
+  var UA = inBrowser && window.navigator.userAgent.toLowerCase();
+  var isIE = UA && /msie|trident/.test(UA);
+  var weexPlatform = inWeex && WXEnvironment.platform.toLowerCase();
+  var isIOS = (UA && /iphone|ipad|ipod|ios/.test(UA)) || (weexPlatform === 'ios');
 
   var nativeWatch = ({}).watch;
 
@@ -145,6 +149,10 @@
     }
     return _isServer
   };
+
+  function isNative (Ctor) {
+    return typeof Ctor === 'function' && /native code/.test(Ctor.toString())
+  }
 
   var strats = config.optionMergeStrategies;
 
@@ -346,7 +354,53 @@
     }
   }
 
-  function nextTick () {}
+  var timerFunc;
+
+  var callbacks = [];
+  var pending = false;
+
+  function flushCallbacks () {
+    pending = false;
+    var copies = callbacks.slice(0);
+    for (var i = 0; i < copies.length; i++) {
+      copies[i]();
+    }
+  }
+
+  if (typeof Promise !== 'undefined' && isNative(Promise)) {
+    var p = Promise.resolve();
+    timerFunc = function () {
+      p.then(flushCallbacks);
+      if (isIOS) { setTimeout(noop); }
+    };
+  } else {
+    console.log('todo.............');
+  }
+
+  function nextTick (cb, ctx) {
+    var _resolve;
+    callbacks.push(function () {
+      if (cb) {
+        try {
+          cb.call(ctx);
+        } catch (e) {
+          console.log(e);
+        }
+      } else if (_resolve) {
+        _resolve(ctx);
+      }
+    });
+    if (!pending) {
+      pending = true;
+      timerFunc();
+    }
+    if (!cb && typeof Promise !== 'undefined') {
+      console.log('todo.............');
+      return new Promise(function (resolve) {
+        _resolve = resolve;
+      })
+    }
+  }
 
   var unicodeRegExp = /a-zA-Z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD/;
 
@@ -659,6 +713,45 @@
     return -1
   }
 
+  var has = {};
+  var flushing = false;
+  var waiting = false;
+
+  var currentFlushTimestamp = 0;
+
+  var getNow = Date.now;
+
+  if (inBrowser && !isIE) {
+    var performance = window.performance;
+    if (
+      performance &&
+      typeof performance.now === 'function' &&
+      getNow() > document.createEvent('Event').timeStamp
+    ) {
+      getNow = function () { return performance.now(); };
+    }
+  }
+
+  function flushSchedulerQueue () {
+    currentFlushTimestamp = getNow();
+    flushing = true;
+  }
+
+  function queueWatcher (watcher) {
+    console.log(watcher);
+    var id = watcher.id;
+    if (has[id] == null) {
+      has[id] = true;
+      if (!flushing) ; else {
+        console.log('todo..........');
+      }
+      if (!waiting) {
+        waiting = true;
+        nextTick(flushSchedulerQueue);
+      }
+    }
+  }
+
   var uid$1 = 0;
   var Watcher = function Watcher (vm, expOrFn, cb, options, isRenderWatcher) {
     this.vm = vm;
@@ -747,7 +840,17 @@
   };
 
   Watcher.prototype.update = function update () {
-    this.cb.call(this.vm, this.value);
+    if (this.lazy) {
+      this.dirty = true;
+    } else if (this.sync) {
+      this.run();
+    } else {
+      queueWatcher(this);
+    }
+  };
+
+  Watcher.prototype.run = function run () {
+    console.log('todo..................');
   };
 
   var sharedPropertyDefinition = {
@@ -852,7 +955,7 @@
     toggleObserving(true);
   }
 
-  var computedWatcherOptions = { lazy: true };
+  var computedWatcherOptions = {};
 
   function initComputed (vm, computed) {
     var watchers = vm._computedWatchers = Object.create(null);
