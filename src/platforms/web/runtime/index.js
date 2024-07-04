@@ -25,7 +25,7 @@ extend(Vue.options.components, platformComponents)
 
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 
-Vue.prototype.$mounted = function (el, hydrating) {
+Vue.prototype.$mount = function (el, hydrating) {
   el = el && inBrowser ? query(el) : undefined
   return mountComponent(this, el, hydrating)
 }

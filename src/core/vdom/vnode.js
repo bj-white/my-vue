@@ -1,6 +1,8 @@
 export function createTextVNode () {}
 
-export function createEmptyVNode () {}
+export function createEmptyVNode () {
+  console.log('todo........')
+}
 
 export default class VNode {
   constructor (

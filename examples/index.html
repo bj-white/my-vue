@@ -8,7 +8,7 @@
   <div id="root">
     <span id="span"></span>
   </div>
-  <script src="../dist/vue.runtime.esm.js"></script>
+  <script src="../dist/vue.js"></script>
   <!-- <script src="../dist/vue1.js"></script> -->
   <script>
     console.dir(Vue)
@@ -49,8 +49,14 @@
       created () {
         console.log('created================')
       },
+      beforeMount () {
+        console.log('beforeMount================')
+      },
       mounted () {
         console.log('mounted================')
+      },
+      beforeUpdate () {
+        console.log('beforeUpdate================')
       },
       methods: {
         handleClick () {
@@ -62,19 +68,11 @@
           console.log(newValue, '============')
         }
       },
-      /* render (h) {
+      render (h) {
         return h('div', this.msg)
-      } */
+      }
     })
     console.log(vm)
-
-    const computedWatcherOptions = { lazy: false }
-    const { Watcher } = Vue.util
-    new Watcher(vm, 'a', setSpan, computedWatcherOptions)
-    function setSpan (value) {
-      console.log('span......')
-      document.querySelector('#span').innerHTML = value
-    }
   </script>
 </body>
 </html>

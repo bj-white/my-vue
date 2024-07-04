@@ -1,13 +1,40 @@
 import { pushTarget, popTarget } from '../observer/dep'
 import { invokeWithErrorHandling } from '../util/index'
+import { createEmptyVNode } from '../vdom/vnode'
+import { noop } from '../util/index'
+import Watcher from '../observer/watcher'
 
 export function lifecycleMixin (Vue) {
-  Vue.prototype._update = function () {}
+  Vue.prototype._update = function () {
+    console.log('_update')
+  }
   Vue.prototype.$forceUpdate = function () {}
   Vue.prototype.$destroy = function () {}
 }
 
-export function mountComponent () {}
+export function mountComponent (vm, el, hydrating) {
+  vm.$el = el
+  if (!vm.$options.render) {
+    vm.$options.render = createEmptyVNode
+  }
+  callHook(vm, 'beforeMount')
+
+  let updateComponent = () => {
+    vm._update(vm._render(), hydrating)
+  }
+
+  new Watcher(vm, updateComponent, noop, {
+    before () {
+      if (vm._isMounted && !vm._isDestroyed) {
+        callHook(vm, 'beforeUpdate')
+      }
+    }
+  }, true)
+
+  hydrating = false
+
+  return vm
+}
 
 export function initLifecycle (vm) {
   const options = vm.$options

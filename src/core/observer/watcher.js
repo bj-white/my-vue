@@ -1,4 +1,4 @@
-import { parsePath, noop } from '../util/index'
+import { parsePath, noop, invokeWithErrorHandling } from '../util/index'
 import { popTarget, pushTarget } from './dep'
 import { queueWatcher } from './scheduler'
 
@@ -113,11 +113,18 @@ export default class Watcher {
         const oldValue = this.value
         this.value = value
         if (this.user) {
-          console.log('todo............')
+          const info = `callback for watcher "${this.expression}"`
+          invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
         } else {
           this.cb.call(this.vm, value, oldValue)
         }
       }
+    }
+  }
+
+  teardown () {
+    if (this.active) {
+      console.log('todo............')
     }
   }
 }

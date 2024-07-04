@@ -14,7 +14,9 @@ import {
   bind,
   isPlainObject,
   hasOwn,
-  isReserved
+  isReserved,
+  nativeWatch,
+  invokeWithErrorHandling
 } from '../util/index'
 
 const sharedPropertyDefinition = {
@@ -34,6 +36,25 @@ export function stateMixin (Vue) {
 
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
+
+  Vue.prototype.$watch = function (expOrFn, cb, options) {
+    const vm = this
+    if (isPlainObject(cb)) {
+      console.log('todo............')
+    }
+    options = options || {}
+    options.user = true
+    const watcher = new Watcher(vm, expOrFn, cb, options)
+    if (options.immediate) {
+      const info = `callback for immediate watcher "${watcher.expression}"`
+      pushTarget()
+      invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
+      popTarget()
+    }
+    return function unwatchFn () {
+      watcher.teardown()
+    }
+  }
 }
 
 export function initState (vm) {
@@ -47,6 +68,30 @@ export function initState (vm) {
     observe(vm._data = {}, true)
   }
   if (opts.computed) initComputed(vm, opts.computed)
+  if (opts.watch && opts.watch !== nativeWatch) {
+    initWatch(vm, opts.watch)
+  }
+}
+
+function initWatch (vm, watch) {
+  for (const key in watch) {
+    const handler = watch[key]
+    if (Array.isArray(handler)) {
+      console.log('todo................')
+    } else {
+      createWatcher(vm, key, handler)
+    }
+  }
+}
+
+function createWatcher (vm, expOrFn, handler, options) {
+  if (isPlainObject(handler)) {
+    console.log('todo.............')
+  }
+  if (typeof handler === 'string') {
+    console.log('todo.............')
+  }
+  return vm.$watch(expOrFn, handler, options)
 }
 
 function initData (vm) {

@@ -38,10 +38,9 @@ export function initMinix (Vue) {
     initProvide(vm)
     callHook(vm, 'created')
 
-    /* // todo.............
     if (vm.$options.el) {
       vm.$mount(vm.$options.el)
-    } */
+    }
   }
 }
 
