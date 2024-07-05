@@ -97,6 +97,23 @@
     }
   }
 
+  function isPrimitive (value) {
+    return (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'symbol' ||
+      typeof value === 'boolean'
+    )
+  }
+
+  function isTrue (v) {
+    return v === true
+  }
+
+  function isDef (v) {
+    return v !== undefined && v !== null
+  }
+
   var config = ({
     optionMergeStrategies: Object.create(null),
     silent: false,
@@ -492,7 +509,9 @@
 
   window.Dep = Dep$1;
 
-  function createTextVNode () {}
+  function createTextVNode (val) {
+    return new VNode(undefined, undefined, undefined, String(val))
+  }
 
   function createEmptyVNode () {
     console.log('todo........');
@@ -1244,6 +1263,50 @@
     target._p = prependModifier;
   }
 
+  function normalizeChildren (children) {
+    return isPrimitive(children)
+      ? [createTextVNode(children)]
+      : Array.isArray(children)
+        ? normalizeArrayChildren()
+        : undefined
+  }
+
+  function normalizeArrayChildren (children) {
+    console.log('todo................');
+  }
+
+  var ALWAYS_NORMALIZE = 2;
+
+  function createElement (context, tag, data, children, normalizationType, alwaysNormalize) {
+    if (Array.isArray(data) || isPrimitive(data)) {
+      normalizationType = children;
+      children = data;
+      data = undefined;
+    }
+    if (isTrue(alwaysNormalize)) {
+      normalizationType = ALWAYS_NORMALIZE;
+    }
+    return _createElement(context, tag, data, children, normalizationType)
+  }
+
+  function _createElement (context, tag, data, children, normalizationType) {
+    if (isDef(data) && isDef(data.__ob__)) {
+      console.log('todo..............');
+    }
+    if (isDef(data) && isDef(data.is)) {
+      console.log('todo..............');
+    }
+    if (!tag) {
+      console.log('todo..............');
+    }
+    if (Array.isArray(children) && typeof children[0] === 'function') {
+      console.log('todo..............');
+    }
+    if (normalizationType === ALWAYS_NORMALIZE) {
+      children = normalizeChildren(children);
+    }
+  }
+
   var currentRenderingInstance = null;
 
   function renderMixin (Vue) {
@@ -1281,6 +1344,7 @@
     var options = vm.$options;
     var parentVnode = vm.$vnode = options._parentVnode;
     var renderContext = parentVnode && parentVnode.context;
+    vm.$createElement = function (a, b, c, d) { return createElement(vm, a, b, c, d, true); };
   }
 
   function initInjections (vm) {

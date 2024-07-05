@@ -1,4 +1,6 @@
-export function createTextVNode () {}
+export function createTextVNode (val) {
+  return new VNode(undefined, undefined, undefined, String(val))
+}
 
 export function createEmptyVNode () {
   console.log('todo........')

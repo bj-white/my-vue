@@ -85,3 +85,20 @@ export function remove (arr, item) {
     }
   }
 }
+
+export function isPrimitive (value) {
+  return (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'symbol' ||
+    typeof value === 'boolean'
+  )
+}
+
+export function isTrue (v) {
+  return v === true
+}
+
+export function isDef (v) {
+  return v !== undefined && v !== null
+}

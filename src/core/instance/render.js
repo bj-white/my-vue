@@ -1,5 +1,6 @@
 import { installRenderHelpers } from './render-helper/index'
 import { nextTick } from '../util/index'
+import { createElement } from '../vdom/create-element'
 
 export let currentRenderingInstance = null
 
@@ -36,4 +37,5 @@ export function initRender (vm) {
   const options = vm.$options
   const parentVnode = vm.$vnode = options._parentVnode
   const renderContext = parentVnode && parentVnode.context
+  vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 }
