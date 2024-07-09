@@ -71,6 +71,8 @@
     return _toString.call(obj) === '[object Object]'
   }
 
+  var identity = function (_) { return _; };
+
   function makeMap (str, expectsLowerCase) {
     var map = Object.create(null);
     var list = str.split(',');
@@ -84,7 +86,7 @@
 
   function noop () {}
 
-  function isObject$1 (obj) {
+  function isObject (obj) {
     return obj !== null && typeof obj === 'object'
   }
 
@@ -114,13 +116,18 @@
     return v !== undefined && v !== null
   }
 
+  function isUndef (v) {
+    return v === undefined || v === null
+  }
+
   var config = ({
     optionMergeStrategies: Object.create(null),
     silent: false,
     mustUseProp: no,
     isReservedTag: no,
     isReservedAttr: no,
-    getTagNamespace: noop
+    getTagNamespace: noop,
+    parsePlatformTagName: identity,
   });
 
   var ASSET_TYPES = [
@@ -143,6 +150,8 @@
     'errorCaptured',
     'serverPrefetch'
   ];
+
+  var SSR_ATTR = 'data-server-rendered';
 
   var hasProto = '__proto__' in {};
 
@@ -527,14 +536,30 @@
     componentOptions,
     asyncFactory
   ) {
+    // console.log(tag, data, children, text, elm, context, componentOptions, asyncFactory)
     this.tag = tag;
     this.data = data;
     this.children = children;
     this.text = text;
     this.elm = elm;
+    this.ns = undefined;
     this.context = context;
+    this.fnContext = undefined;
+    this.fnOptions = undefined;
+    this.fnScopeId = undefined;
+    this.key = data && data.key;
     this.componentOptions = componentOptions;
+    this.componentInstance = undefined;
+    this.parent = undefined;
+    this.raw = false;
+    this.isStatic = false;
+    this.isRootInsert = true;
+    this.isComment = false;
+    this.isCloned = false;
+    this.isOnce = false;
     this.asyncFactory = asyncFactory;
+    this.asyncMeta = undefined;
+    this.isAsyncPlaceholder = false;
   };
 
   var arrayProto = Array.prototype;
@@ -654,7 +679,7 @@
   }
 
   function observe (value, asRootData) {
-    if (!isObject$1(value) || value instanceof VNode) {
+    if (!isObject(value) || value instanceof VNode) {
       return
     }
     var ob;
@@ -691,6 +716,7 @@
       value = getPropDefaultValue(vm, prop, key);
       var prevShouldObserve = shouldObserve;
       toggleObserving(true);
+      observe(value);
       toggleObserving(prevShouldObserve);
     }
     return value
@@ -1142,9 +1168,29 @@
     console.log('todo.................');
   }
 
+  var activeInstance = null;
+
+  function setActiveInstance (vm) {
+    var prevActiveInstance = activeInstance;
+    activeInstance = vm;
+    return function () {
+      activeInstance = prevActiveInstance;
+    }
+  }
+
   function lifecycleMixin (Vue) {
-    Vue.prototype._update = function () {
-      console.log('_update');
+    Vue.prototype._update = function (vnode, hydrating) {
+      var vm = this;
+      var prevEl = vm.$el;
+      var prevVnode = vm._vnode;
+      var restoreActiveInstance = setActiveInstance(vm);
+      vm._node = vnode;
+      if (!prevVnode) {
+        vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false);
+      } else {
+        console.log('todo..........');
+      }
+      restoreActiveInstance();
     };
     Vue.prototype.$forceUpdate = function () {};
     Vue.prototype.$destroy = function () {};
@@ -1275,6 +1321,7 @@
     console.log('todo................');
   }
 
+  var SIMPLE_NORMALIZE = 1;
   var ALWAYS_NORMALIZE = 2;
 
   function createElement (context, tag, data, children, normalizationType, alwaysNormalize) {
@@ -1304,7 +1351,44 @@
     }
     if (normalizationType === ALWAYS_NORMALIZE) {
       children = normalizeChildren(children);
+    } else if (normalizationType === SIMPLE_NORMALIZE) {
+      console.log('todo.............');
     }
+    var vnode, ns;
+    if (typeof tag === 'string') {
+      ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag);
+      if (config.isReservedTag(tag)) {
+        vnode = new VNode(
+          config.parsePlatformTagName(tag),
+          data,
+          children,
+          undefined,
+          undefined,
+          context
+        );
+      } else {
+        console.log('todo..............');
+      }
+    } else {
+      console.log('todo..................');
+    }
+    if (Array.isArray(vnode)) {
+      console.log('todo..........');
+    } else if (isDef(vnode)) {
+      if (isDef(ns)) { applyNS(); }
+      if (isDef(data)) { registerDeepBindings(); }
+      return vnode
+    } else {
+      console.log('todo................');
+    }
+  }
+
+  function applyNS (vnode, ns, force) {
+    console.log('todo................');
+  }
+
+  function registerDeepBindings (data) {
+    console.log('todo................');
   }
 
   var currentRenderingInstance = null;
@@ -1334,6 +1418,13 @@
       } finally {
         currentRenderingInstance = null;
       }
+      if (Array.isArray(vnode) && vnode.length === 1) {
+        vnode = vnode[0];
+      }
+      if (!(vnode instanceof VNode)) {
+        console.log('todo................');
+      }
+      vnode.parent = _parentVnode;
       return vnode
     };
   }
@@ -1508,17 +1599,312 @@
 
   Vue.version = '1.0.0';
 
+  var hooks = ['create', 'activate', 'update', 'remove', 'destroy'];
+
   function createPatchFunction (backend) {
-    return function patch () {}
+    var i, j;
+    var cbs = {};
+
+    var modules = backend.modules;
+    var nodeOps = backend.nodeOps;
+
+    for (i = 0; i < hooks.length; ++i) {
+      cbs[hooks[i]] = [];
+      for (j = 0; j < modules.length; ++j) {
+        if (isDef(modules[j][hooks[i]])) {
+          cbs[hooks[i]].push(modules[j][hooks[i]]);
+        }
+      }
+    }
+
+    function emptyNodeAt (elm) {
+      return new VNode(nodeOps.tagName(elm).toLowerCase(), {}, [], undefined, elm)
+    }
+
+    function setScope (vnode) {
+      var i;
+      if (isDef(i = vnode.fnScopeId)) {
+        console.log('todo............');
+      } else {
+        var ancestor = vnode;
+        while (ancestor) {
+          if (isDef(i = ancestor.context) && isDef(i = i.$options._scopeId)) {
+            console.log('todo...............');
+          }
+          ancestor = vnode.parent;
+        }
+      }
+      if (
+        isDef(i = activeInstance) &&
+        i !== vnode.context &&
+        i !== vnode.fnContext &&
+        isDef(i = i.$options._scopeId)
+      ) {
+        console.log('todo...............');
+      }
+    }
+
+    function createElm (
+      vnode,
+      insertedVnodeQueue,
+      parentElm,
+      refElm,
+      nested,
+      ownerArray,
+      index
+    ) {
+      if (isDef(vnode.elm && isDef(ownerArray))) {
+        console.log('todo................');
+      }
+      vnode.isRootInsert = !nested;
+      if (createComponent(vnode)) {
+        return
+      }
+
+      var data = vnode.data;
+      var children = vnode.children;
+      var tag = vnode.tag;
+      
+      if (isDef(tag)) {
+        vnode.elm = vnode.ns
+          ? nodeOps.createElementNS(vnode.ns, tag)
+          : nodeOps.createElement(tag, vnode);
+        setScope(vnode);
+
+        createChildren(vnode, children, insertedVnodeQueue);
+        if (isDef(data)) {
+          console.log('todo............');
+        }
+        insert(parentElm, vnode.elm, refElm);
+      } else if (isTrue(vnode.isComment)) {
+        console.log('todo....................');
+      } else {
+        vnode.elm = nodeOps.createTextNode(vnode.text);
+        insert(parentElm, vnode.elm, refElm);
+      }
+    }
+
+    function createChildren (vnode, children, insertedVnodeQueue) {
+      if (Array.isArray(children)) {
+        for (var i = 0; i < children.length; ++i) {
+          createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children);
+        }
+      } else {
+        console.log('todo..................');
+      }
+    }
+
+    function insert (parent, elm, ref) {
+      if (isDef(parent)) {
+        if (isDef(ref)) {
+          if (nodeOps.parentNode(ref) === parent) {
+            nodeOps.insertBefore(parent, elm, ref);
+          }
+        } else {
+          nodeOps.appendChild(parent, elm);
+        }
+      }
+    }
+
+    function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
+      var i = vnode.data;
+      if (isDef(i)) {
+        console.log('todo...................');
+      }
+    }
+
+    function removeVnodes (vnodes, startIdx, endIdx) {
+      console.log(vnodes, startIdx, endIdx, '0000000');
+      for (; startIdx <= endIdx; ++startIdx) {
+        var ch = vnodes[startIdx];
+        if (isDef(ch)) {
+          if (isDef(ch.tag)) {
+            removeAndInvokeRemoveHook(ch);
+          } else {
+            console.log('todo..............');
+          }
+        }
+      }
+    }
+
+    function removeAndInvokeRemoveHook (vnode, rm) {
+      if (isDef(rm) || isDef(vnode.data)) {
+        console.log('todo..............');
+      } else {
+        removeNode(vnode.elm);
+      }
+    }
+
+    function removeNode (el) {
+      var parent = nodeOps.parentNode(el);
+      if (isDef(parent)) {
+        nodeOps.removeChild(parent, el);
+      }
+    }
+
+    return function patch (oldVnode, vnode, hydrating, removeOnly) {
+      if (isUndef(vnode)) {
+        console.log('todo......................');
+      }
+      var insertedVnodeQueue = [];
+
+      if (isUndef(oldVnode)) {
+        console.log('todo..............');
+      } else {
+        var isRealElement = isDef(oldVnode.nodeType);
+        if (!isRealElement && sameVnode(oldVnode, vnode)) {
+          console.log('todo...........');
+        } else {
+          if (isRealElement) {
+            if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) {
+              console.log('todo..............');
+            }
+            if (isTrue(hydrating)) {
+              console.log('todo..................');
+            }
+            oldVnode = emptyNodeAt(oldVnode);
+          }
+
+          var oldElm = oldVnode.elm;
+          var parentElm = nodeOps.parentNode(oldElm);
+          
+          createElm(
+            vnode,
+            insertedVnodeQueue,
+            oldElm._leaveCb ? null : parentElm,
+            nodeOps.nextSibling(oldElm)
+          );
+          
+          if (isDef(vnode.parent)) {
+            console.log('todo...............');
+          }
+
+          if (isDef(parentElm)) {
+            removeVnodes([oldVnode], 0, 0);
+          } else if (isDef(oldVnode.tag)) {
+            console.log('todo...........');
+          }
+        }
+      }
+
+      return vnode.elm
+    }
   }
 
-  var patch = createPatchFunction();
+  function createElement$1 (tagName, vnode) {
+    var elm = document.createElement(tagName);
+    if (tagName !== 'select') {
+      return elm
+    }
+    console.log('todo................');
+  }
+
+  function tagName (node) {
+    return node.tagName
+  }
+
+  function parentNode (node) {
+    return node.parentNode
+  }
+
+  function nextSibling (node) {
+    return node.nextSibling
+  }
+
+  function createElementNS (namespace, tagName) {
+    console.log('todo.........................');
+  }
+
+  function createTextNode (text) {
+    return document.createTextNode(text)
+  }
+
+  function insertBefore (parentNode, newNode, reference) {
+    parentNode.insertBefore(newNode, reference);
+  }
+
+  function appendChild (node, child) {
+    node.appendChild(child);
+  }
+
+  function removeChild (node, child) {
+    node.removeChild(child);
+  }
+
+  var nodeOps = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    createElement: createElement$1,
+    tagName: tagName,
+    parentNode: parentNode,
+    nextSibling: nextSibling,
+    createElementNS: createElementNS,
+    createTextNode: createTextNode,
+    insertBefore: insertBefore,
+    appendChild: appendChild,
+    removeChild: removeChild
+  });
+
+  var platformModules = [];
+
+  var directives = {
+    create: updateDirectives,
+    update: updateDirectives,
+    destroy: function unbindDirectives () {}
+  };
+
+  function updateDirectives () {}
+
+  var ref = {
+    create: function create () {},
+    update: function update () {},
+    destroy: function destroy () {}
+  };
+
+  var baseModules = [
+    ref,
+    directives
+  ];
+
+  var modules = platformModules.concat(baseModules);
+
+  var patch = createPatchFunction({ nodeOps: nodeOps, modules: modules });
 
   var mustUseProp = function () {};
   var isReservedAttr = makeMap('style,class');
 
-  var isReservedTag = function () {};
-  function getTagNamespace () {}
+  var isHTMLTag = makeMap(
+    'html,body,base,head,link,meta,style,title,' +
+    'address,article,aside,footer,header,h1,h2,h3,h4,h5,h6,hgroup,nav,section,' +
+    'div,dd,dl,dt,figcaption,figure,picture,hr,img,li,main,ol,p,pre,ul,' +
+    'a,b,abbr,bdi,bdo,br,cite,code,data,dfn,em,i,kbd,mark,q,rp,rt,rtc,ruby,' +
+    's,samp,small,span,strong,sub,sup,time,u,var,wbr,area,audio,map,track,video,' +
+    'embed,object,param,source,canvas,script,noscript,del,ins,' +
+    'caption,col,colgroup,table,thead,tbody,td,th,tr,' +
+    'button,datalist,fieldset,form,input,label,legend,meter,optgroup,option,' +
+    'output,progress,select,textarea,' +
+    'details,dialog,menu,menuitem,summary,' +
+    'content,element,shadow,template,blockquote,iframe,tfoot'
+  );
+
+  var isSVG = makeMap(
+    'svg,animate,circle,clippath,cursor,defs,desc,ellipse,filter,font-face,' +
+    'foreignobject,g,glyph,image,line,marker,mask,missing-glyph,path,pattern,' +
+    'polygon,polyline,rect,switch,symbol,text,textpath,tspan,use,view',
+    true
+  );
+
+  var isReservedTag = function (tag) {
+    return isHTMLTag(tag) || isSVG(tag)
+  };
+
+  function getTagNamespace (tag) {
+    if (isSVG(tag)) {
+      return 'svg'
+    }
+    if (tag === 'math') {
+      return 'math'
+    }
+  }
   function isUnknownElement () {}
 
   function query (el) {

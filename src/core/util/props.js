@@ -17,6 +17,7 @@ export function validateProp (key, propOptions, propsData, vm) {
     value = getPropDefaultValue(vm, prop, key)
     const prevShouldObserve = shouldObserve
     toggleObserving(true)
+    observe(value)
     toggleObserving(prevShouldObserve)
   }
   return value

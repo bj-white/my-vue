@@ -60,6 +60,8 @@ export function isPlainObject (obj) {
   return _toString.call(obj) === '[object Object]'
 }
 
+export const identity = (_) => _
+
 export function makeMap (str, expectsLowerCase) {
   const map = Object.create(null)
   const list = str.split(',')
@@ -101,4 +103,8 @@ export function isTrue (v) {
 
 export function isDef (v) {
   return v !== undefined && v !== null
+}
+
+export function isUndef (v) {
+  return v === undefined || v === null
 }

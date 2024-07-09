@@ -18,3 +18,5 @@ export const LIFECYCLE_HOOKS = [
   'errorCaptured',
   'serverPrefetch'
 ]
+
+export const SSR_ATTR = 'data-server-rendered'

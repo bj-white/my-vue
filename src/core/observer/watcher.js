@@ -1,4 +1,4 @@
-import { parsePath, noop, invokeWithErrorHandling } from '../util/index'
+import { parsePath, noop, invokeWithErrorHandling, isObject } from '../util/index'
 import { popTarget, pushTarget } from './dep'
 import { queueWatcher } from './scheduler'
 

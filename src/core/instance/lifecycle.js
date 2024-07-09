@@ -4,9 +4,29 @@ import { createEmptyVNode } from '../vdom/vnode'
 import { noop } from '../util/index'
 import Watcher from '../observer/watcher'
 
+export let activeInstance = null
+
+export function setActiveInstance (vm) {
+  const prevActiveInstance = activeInstance
+  activeInstance = vm
+  return () => {
+    activeInstance = prevActiveInstance
+  }
+}
+
 export function lifecycleMixin (Vue) {
-  Vue.prototype._update = function () {
-    console.log('_update')
+  Vue.prototype._update = function (vnode, hydrating) {
+    const vm = this
+    const prevEl = vm.$el
+    const prevVnode = vm._vnode
+    const restoreActiveInstance = setActiveInstance(vm)
+    vm._node = vnode
+    if (!prevVnode) {
+      vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false)
+    } else {
+      console.log('todo..........')
+    }
+    restoreActiveInstance()
   }
   Vue.prototype.$forceUpdate = function () {}
   Vue.prototype.$destroy = function () {}

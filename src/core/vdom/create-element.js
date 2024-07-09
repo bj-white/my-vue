@@ -1,6 +1,9 @@
 import { isPrimitive, isTrue, isDef } from '../util/index'
 import { normalizeChildren } from './helpers/index'
+import config from '../config'
+import VNode from './vnode'
 
+const SIMPLE_NORMALIZE = 1
 const ALWAYS_NORMALIZE = 2
 
 export function createElement (context, tag, data, children, normalizationType, alwaysNormalize) {
@@ -30,5 +33,43 @@ export function _createElement (context, tag, data, children, normalizationType)
   }
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children)
+  } else if (normalizationType === SIMPLE_NORMALIZE) {
+    console.log('todo.............')
   }
+  let vnode, ns
+  if (typeof tag === 'string') {
+    let Ctor
+    ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag)
+    if (config.isReservedTag(tag)) {
+      vnode = new VNode(
+        config.parsePlatformTagName(tag),
+        data,
+        children,
+        undefined,
+        undefined,
+        context
+      )
+    } else {
+      console.log('todo..............')
+    }
+  } else {
+    console.log('todo..................')
+  }
+  if (Array.isArray(vnode)) {
+    console.log('todo..........')
+  } else if (isDef(vnode)) {
+    if (isDef(ns)) applyNS(vnode, ns)
+    if (isDef(data)) registerDeepBindings(data)
+    return vnode
+  } else {
+    console.log('todo................')
+  }
+}
+
+function applyNS (vnode, ns, force) {
+  console.log('todo................')
+}
+
+function registerDeepBindings (data) {
+  console.log('todo................')
 }

@@ -1,4 +1,4 @@
-import { no, noop } from 'shared/util'
+import { no, noop, identity } from 'shared/util'
 
 export default ({
   optionMergeStrategies: Object.create(null),
@@ -6,5 +6,6 @@ export default ({
   mustUseProp: no,
   isReservedTag: no,
   isReservedAttr: no,
-  getTagNamespace: noop
+  getTagNamespace: noop,
+  parsePlatformTagName: identity,
 })

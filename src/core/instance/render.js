@@ -1,6 +1,7 @@
 import { installRenderHelpers } from './render-helper/index'
 import { nextTick } from '../util/index'
 import { createElement } from '../vdom/create-element'
+import VNode from '../vdom/vnode'
 
 export let currentRenderingInstance = null
 
@@ -27,6 +28,13 @@ export function renderMixin (Vue) {
     } finally {
       currentRenderingInstance = null
     }
+    if (Array.isArray(vnode) && vnode.length === 1) {
+      vnode = vnode[0]
+    }
+    if (!(vnode instanceof VNode)) {
+      console.log('todo................')
+    }
+    vnode.parent = _parentVnode
     return vnode
   }
 }
