@@ -1,4 +1,5 @@
 import { nextTick, inBrowser, isIE } from '../util/index'
+import { callHook } from '../instance/lifecycle'
 
 let has = {}
 let flushing = false
@@ -57,8 +58,8 @@ function callUpdatedHooks (queue) {
   while (i--) {
     const watcher = queue[i]
     const vm = watcher.vm
-    if (vm._watcher && watcher && vm._isMounted && !vm._isDestroyed) {
-      console.log('todo...............')
+    if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
+      callHook(vm, 'updated')
     }
   }
 }

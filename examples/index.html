@@ -55,6 +55,9 @@
       beforeUpdate () {
         console.log('beforeUpdate================')
       },
+      updated () {
+        console.log('updated===============', this)
+      },
       methods: {
         handleClick () {
           console.log(this.msg)

@@ -761,6 +761,102 @@
     return -1
   }
 
+  var activeInstance = null;
+
+  function setActiveInstance (vm) {
+    var prevActiveInstance = activeInstance;
+    activeInstance = vm;
+    return function () {
+      activeInstance = prevActiveInstance;
+    }
+  }
+
+  function lifecycleMixin (Vue) {
+    Vue.prototype._update = function (vnode, hydrating) {
+      var vm = this;
+      var prevEl = vm.$el;
+      var prevVnode = vm._vnode;
+      var restoreActiveInstance = setActiveInstance(vm);
+      vm._node = vnode;
+      if (!prevVnode) {
+        vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false);
+      } else {
+        console.log('todo..........');
+      }
+      restoreActiveInstance();
+      if (prevEl) {
+        prevEl.__vue__ = null;
+      }
+      if (vm.$el) {
+        vm.$el.__vue__ = vm;
+      }
+      if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+        console.log('todo...............');
+      }
+    };
+    Vue.prototype.$forceUpdate = function () {};
+    Vue.prototype.$destroy = function () {};
+  }
+
+  function mountComponent (vm, el, hydrating) {
+    vm.$el = el;
+    if (!vm.$options.render) {
+      vm.$options.render = createEmptyVNode;
+    }
+    callHook(vm, 'beforeMount');
+
+    var updateComponent = function () {
+      vm._update(vm._render(), hydrating);
+    };
+
+    new Watcher(vm, updateComponent, noop, {
+      before: function before () {
+        if (vm._isMounted && !vm._isDestroyed) {
+          callHook(vm, 'beforeUpdate');
+        }
+      }
+    }, true);
+    hydrating = false;
+    if (vm.$vnode == null) {
+      vm._isMounted = true;
+      callHook(vm, 'mounted');
+    }
+
+    return vm
+  }
+
+  function initLifecycle (vm) {
+    var options = vm.$options;
+    var parent = options.parent;
+    if (parent && !options.abstract) {
+      console.log('todo............');
+    }
+
+    vm.$parent = parent;
+    vm.$root = parent ? parent.$root : vm;
+
+    vm.$children = [];
+    vm.$refs = {};
+
+    vm._watcher = null;
+    vm._inactive = null;
+    vm._directInactive = false;
+    vm._isMounted = false;
+    vm._isDestroyed = false;
+    vm._isBeingDestroyed = false;
+  }
+
+  function callHook (vm, hook) {
+    pushTarget();
+    var handlers = vm.$options[hook];
+    if (handlers)  {
+      for (var i = 0, j = handlers.length; i < j; i++) {
+        invokeWithErrorHandling(handlers[i], vm, null);
+      }
+    }
+    popTarget();
+  }
+
   var has = {};
   var flushing = false;
   var queue = [];
@@ -818,8 +914,8 @@
     while (i--) {
       var watcher = queue[i];
       var vm = watcher.vm;
-      if (vm._watcher && watcher && vm._isMounted && !vm._isDestroyed) {
-        console.log('todo...............');
+      if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
+        callHook(vm, 'updated');
       }
     }
   }
@@ -1166,102 +1262,6 @@
 
   function createGetterInvoker (fn) {
     console.log('todo.................');
-  }
-
-  var activeInstance = null;
-
-  function setActiveInstance (vm) {
-    var prevActiveInstance = activeInstance;
-    activeInstance = vm;
-    return function () {
-      activeInstance = prevActiveInstance;
-    }
-  }
-
-  function lifecycleMixin (Vue) {
-    Vue.prototype._update = function (vnode, hydrating) {
-      var vm = this;
-      var prevEl = vm.$el;
-      var prevVnode = vm._vnode;
-      var restoreActiveInstance = setActiveInstance(vm);
-      vm._node = vnode;
-      if (!prevVnode) {
-        vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false);
-      } else {
-        console.log('todo..........');
-      }
-      restoreActiveInstance();
-      if (prevEl) {
-        prevEl.__vue__ = null;
-      }
-      if (vm.$el) {
-        vm.$el.__vue__ = vm;
-      }
-      if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
-        console.log('todo...............');
-      }
-    };
-    Vue.prototype.$forceUpdate = function () {};
-    Vue.prototype.$destroy = function () {};
-  }
-
-  function mountComponent (vm, el, hydrating) {
-    vm.$el = el;
-    if (!vm.$options.render) {
-      vm.$options.render = createEmptyVNode;
-    }
-    callHook(vm, 'beforeMount');
-
-    var updateComponent = function () {
-      vm._update(vm._render(), hydrating);
-    };
-
-    new Watcher(vm, updateComponent, noop, {
-      before: function before () {
-        if (vm._isMounted && !vm._isDestroyed) {
-          callHook(vm, 'beforeUpdate');
-        }
-      }
-    }, true);
-    hydrating = false;
-    if (vm.$vnode == null) {
-      vm._isMounted = true;
-      callHook(vm, 'mounted');
-    }
-
-    return vm
-  }
-
-  function initLifecycle (vm) {
-    var options = vm.$options;
-    var parent = options.parent;
-    if (parent && !options.abstract) {
-      console.log('todo............');
-    }
-
-    vm.$parent = parent;
-    vm.$root = parent ? parent.$root : vm;
-
-    vm.$children = [];
-    vm.$refs = {};
-
-    vm._watcher = null;
-    vm._inactive = null;
-    vm._directInactive = false;
-    vm._isMounted = false;
-    vm._isDestroyed = false;
-    vm._isBeingDestroyed = false;
-  }
-
-  function callHook (vm, hook) {
-    pushTarget();
-    var handlers = vm.$options[hook];
-    if (handlers)  {
-      for (var i = 0, j = handlers.length; i < j; i++) {
-        invokeWithErrorHandling(handlers[i], vm, null);
-      }
-    }
-    popTarget();
   }
 
   function eventsMixin (Vue) {
