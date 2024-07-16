@@ -27,6 +27,15 @@ export function lifecycleMixin (Vue) {
       console.log('todo..........')
     }
     restoreActiveInstance()
+    if (prevEl) {
+      prevEl.__vue__ = null
+    }
+    if (vm.$el) {
+      vm.$el.__vue__ = vm
+    }
+    if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+      console.log('todo...............')
+    }
   }
   Vue.prototype.$forceUpdate = function () {}
   Vue.prototype.$destroy = function () {}
@@ -50,8 +59,11 @@ export function mountComponent (vm, el, hydrating) {
       }
     }
   }, true)
-
   hydrating = false
+  if (vm.$vnode == null) {
+    vm._isMounted = true
+    callHook(vm, 'mounted')
+  }
 
   return vm
 }

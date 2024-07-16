@@ -5,6 +5,8 @@ import { activeInstance } from '../instance/lifecycle'
 
 const hooks = ['create', 'activate', 'update', 'remove', 'destroy']
 
+export const emptyNode = new VNode('', {}, [])
+
 export function createPatchFunction (backend) {
   let i, j
   const cbs = {}
@@ -116,13 +118,31 @@ export function createPatchFunction (backend) {
     }
   }
 
+  function invokeDestroyHook (vnode) {
+    let i, j
+    const data = vnode.data
+    if (isDef(data)) {
+      if (isDef(i = data.hook) && isDef(i = i.destroy)) {
+        console.log('todo...............')
+      }
+      for (i = 0; i < cbs.destroy.length; ++i) {
+        cbs.destroy[i](vnode)
+      }
+    }
+    if (isDef(i = vnode.children)) {
+      for (j = 0; j < vnode.children.length; ++j) {
+        console.log('todo.................')
+      }
+    }
+  }
+
   function removeVnodes (vnodes, startIdx, endIdx) {
-    console.log(vnodes, startIdx, endIdx, '0000000')
     for (; startIdx <= endIdx; ++startIdx) {
       const ch = vnodes[startIdx]
       if (isDef(ch)) {
         if (isDef(ch.tag)) {
           removeAndInvokeRemoveHook(ch)
+          invokeDestroyHook(ch)
         } else {
           console.log('todo..............')
         }
@@ -130,9 +150,36 @@ export function createPatchFunction (backend) {
     }
   }
 
+  function createRmCb (childElm, listeners) {
+    function remove () {
+      if (--remove.listeners === 0) {
+        removeNode(childElm)
+      }
+    }
+    remove.listeners = listeners
+    return remove
+  }
+
   function removeAndInvokeRemoveHook (vnode, rm) {
     if (isDef(rm) || isDef(vnode.data)) {
-      console.log('todo..............')
+      let i
+      const listeners = cbs.remove.length + 1
+      if (isDef(rm)) {
+        console.log('todo..............')
+      } else {
+        rm = createRmCb(vnode.elm, listeners)
+      }
+      if (isDef(i = vnode.componentInstance) && isDef(i = i._vnode) && isDef(i.data)) {
+        console.log('todo.......................')
+      }
+      for (i = 0; i < cbs.remove.length; ++i) {
+        console.log('todo..............')
+      }
+      if (isDef(i = vnode.data.hook) && isDef(i = i.remove)) {
+        console.log('todo...............')
+      } else {
+        rm()
+      }
     } else {
       removeNode(vnode.elm)
     }
@@ -187,11 +234,22 @@ export function createPatchFunction (backend) {
         if (isDef(parentElm)) {
           removeVnodes([oldVnode], 0, 0)
         } else if (isDef(oldVnode.tag)) {
-          console.log('todo...........')
+          console.log('todo...............')
         }
       }
     }
 
+    invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
     return vnode.elm
+  }
+
+  function invokeInsertHook (vnode, queue, initial) {
+    if (isTrue(initial) && isDef(vnode.parent)) {
+      console.log('todo....................')
+    } else {
+      for (let i = 0; i < queue.length; ++i) {
+        console.log('todo................')
+      }
+    }
   }
 }

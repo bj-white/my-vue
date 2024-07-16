@@ -1191,6 +1191,15 @@
         console.log('todo..........');
       }
       restoreActiveInstance();
+      if (prevEl) {
+        prevEl.__vue__ = null;
+      }
+      if (vm.$el) {
+        vm.$el.__vue__ = vm;
+      }
+      if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+        console.log('todo...............');
+      }
     };
     Vue.prototype.$forceUpdate = function () {};
     Vue.prototype.$destroy = function () {};
@@ -1214,8 +1223,11 @@
         }
       }
     }, true);
-
     hydrating = false;
+    if (vm.$vnode == null) {
+      vm._isMounted = true;
+      callHook(vm, 'mounted');
+    }
 
     return vm
   }
@@ -1601,6 +1613,8 @@
 
   var hooks = ['create', 'activate', 'update', 'remove', 'destroy'];
 
+  var emptyNode = new VNode('', {}, []);
+
   function createPatchFunction (backend) {
     var i, j;
     var cbs = {};
@@ -1713,13 +1727,31 @@
       }
     }
 
+    function invokeDestroyHook (vnode) {
+      var i, j;
+      var data = vnode.data;
+      if (isDef(data)) {
+        if (isDef(i = data.hook) && isDef(i = i.destroy)) {
+          console.log('todo...............');
+        }
+        for (i = 0; i < cbs.destroy.length; ++i) {
+          cbs.destroy[i](vnode);
+        }
+      }
+      if (isDef(i = vnode.children)) {
+        for (j = 0; j < vnode.children.length; ++j) {
+          console.log('todo.................');
+        }
+      }
+    }
+
     function removeVnodes (vnodes, startIdx, endIdx) {
-      console.log(vnodes, startIdx, endIdx, '0000000');
       for (; startIdx <= endIdx; ++startIdx) {
         var ch = vnodes[startIdx];
         if (isDef(ch)) {
           if (isDef(ch.tag)) {
             removeAndInvokeRemoveHook(ch);
+            invokeDestroyHook(ch);
           } else {
             console.log('todo..............');
           }
@@ -1727,9 +1759,36 @@
       }
     }
 
+    function createRmCb (childElm, listeners) {
+      function remove () {
+        if (--remove.listeners === 0) {
+          removeNode(childElm);
+        }
+      }
+      remove.listeners = listeners;
+      return remove
+    }
+
     function removeAndInvokeRemoveHook (vnode, rm) {
       if (isDef(rm) || isDef(vnode.data)) {
-        console.log('todo..............');
+        var i;
+        var listeners = cbs.remove.length + 1;
+        if (isDef(rm)) {
+          console.log('todo..............');
+        } else {
+          rm = createRmCb(vnode.elm, listeners);
+        }
+        if (isDef(i = vnode.componentInstance) && isDef(i = i._vnode) && isDef(i.data)) {
+          console.log('todo.......................');
+        }
+        for (i = 0; i < cbs.remove.length; ++i) {
+          console.log('todo..............');
+        }
+        if (isDef(i = vnode.data.hook) && isDef(i = i.remove)) {
+          console.log('todo...............');
+        } else {
+          rm();
+        }
       } else {
         removeNode(vnode.elm);
       }
@@ -1746,6 +1805,8 @@
       if (isUndef(vnode)) {
         console.log('todo......................');
       }
+
+      var isInitialPatch = false;
       var insertedVnodeQueue = [];
 
       if (isUndef(oldVnode)) {
@@ -1782,12 +1843,23 @@
           if (isDef(parentElm)) {
             removeVnodes([oldVnode], 0, 0);
           } else if (isDef(oldVnode.tag)) {
-            console.log('todo...........');
+            console.log('todo...............');
           }
         }
       }
 
+      invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch);
       return vnode.elm
+    }
+
+    function invokeInsertHook (vnode, queue, initial) {
+      if (isTrue(initial) && isDef(vnode.parent)) {
+        console.log('todo....................');
+      } else {
+        for (var i = 0; i < queue.length; ++i) {
+          console.log('todo................');
+        }
+      }
     }
   }
 
@@ -1849,16 +1921,34 @@
   var directives = {
     create: updateDirectives,
     update: updateDirectives,
-    destroy: function unbindDirectives () {}
+    destroy: function unbindDirectives (vnode) {
+      updateDirectives(vnode, emptyNode);
+    }
   };
 
-  function updateDirectives () {}
+  function updateDirectives (oldVnode, vnode) {
+    if (oldVnode.data.directives || vnode.data.directives) {
+      _update();
+    }
+  }
+
+  function _update (oldVnode, vnode) {
+    console.log('todo.................');
+  }
 
   var ref = {
     create: function create () {},
     update: function update () {},
-    destroy: function destroy () {}
+    destroy: function destroy (vnode) {
+      registerRef(vnode);
+    }
   };
+
+  function registerRef (vnode, isRemoval) {
+    var key = vnode.data.ref;
+    if (!isDef(key)) { return }
+    console.log('todo..................');
+  }
 
   var baseModules = [
     ref,

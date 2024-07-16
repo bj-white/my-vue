@@ -7,11 +7,10 @@
 <body>
   a<div id="root">c</div>b
   <script src="../dist/vue.js"></script>
-  <!-- <script src="../dist/vue1.js"></script> -->
   <script>
     console.dir(Vue)
     const vm = new Vue({
-      el: '#root',
+      // el: '#root',
       props: {
         name: {
           type: String,
@@ -69,7 +68,7 @@
       render (h) {
         return h('div', this.msg)
       }
-    })
+    }).$mount('#root')
     console.log(vm)
   </script>
 </body>
