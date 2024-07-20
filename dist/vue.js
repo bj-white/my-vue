@@ -1030,6 +1030,13 @@
     }
   };
 
+  Watcher.prototype.depend = function depend () {
+    var i = this.deps.length;
+    while (i--) {
+      this.deps[i].depend();
+    }
+  };
+
   Watcher.prototype.update = function update () {
     if (this.lazy) {
       this.dirty = true;
@@ -1253,7 +1260,7 @@
           watcher.evaluate();
         }
         if (Dep.target) {
-          console.log('todo..............');
+          watcher.depend();
         }
         return watcher.value
       }

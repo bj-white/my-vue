@@ -10,7 +10,7 @@
   <script>
     console.dir(Vue)
     const vm = new Vue({
-      // el: '#root',
+      el: '#root',
       props: {
         name: {
           type: String,
@@ -33,7 +33,7 @@
       },
       computed: {
         comMsg () {
-          return this.msg
+          return this.msg + '-111'
         },
         c () {
           console.log('computed.............')
@@ -69,9 +69,9 @@
         }
       },
       render (h) {
-        return h('div', this.msg)
+        return h('div', this.comMsg)
       }
-    }).$mount('#root')
+    })
     console.log(vm)
   </script>
 </body>

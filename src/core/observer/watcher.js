@@ -92,6 +92,13 @@ export default class Watcher {
     }
   }
 
+  depend () {
+    let i = this.deps.length
+    while (i--) {
+      this.deps[i].depend()
+    }
+  }
+
   update () {
     if (this.lazy) {
       this.dirty = true

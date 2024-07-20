@@ -207,7 +207,7 @@ function createComputedGetter (key) {
         watcher.evaluate()
       }
       if (Dep.target) {
-        console.log('todo..............')
+        watcher.depend()
       }
       return watcher.value
     }
