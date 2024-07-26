@@ -1,19 +1,21 @@
 import Vuex from 'vuex'
+import DocService from './service'
 
 export default class Module {
   constructor ({ config }) {
     this.initialize(config)
     this.store = this.createStore()
     this.context = this.createContext()
+    console.log('module=========================', this)
   }
 
   initialize (config) {
     this.config = config
-    console.log(this.config)
     this.state = {}
     this.actions = [
       'bootstrap'
     ]
+    this.services = new Map()
   }
 
   createStore () {
@@ -39,9 +41,18 @@ export default class Module {
   async bootstrap () {
     const requestPromisesAllSettled = []
     requestPromisesAllSettled.push(this.initServices())
+    await Promise.allSettled(requestPromisesAllSettled)
   }
 
   async initServices () {
+    const serviceDefs = Object.entries(this.config.serviceDefs)
+    for (const [key, def] of serviceDefs) {
+      const service = await this.createDocService(def, key)
+      this.services.set(key, service)
+    }
+  }
 
+  async createDocService (serviceDef, key) {
+    return await DocService.newService(serviceDef)
   }
 }
