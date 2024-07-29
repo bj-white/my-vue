@@ -1,4 +1,5 @@
-import DocumentType from './document-type'
+import DocumentType from '../document/document-type'
+import DocumentSchema from './schema'
 
 class DocumentSchemaBulider {
   constructor (config) {
@@ -30,7 +31,7 @@ class DocumentSchemaBulider {
 
   getSchema () {
     const mainType = this.getType(this.config.mainType)
-    return mainType
+    return new DocumentSchema(this.config.name, mainType)
   }
 
   getType (typeName) {
@@ -59,7 +60,11 @@ class DocumentSchemaBulider {
     const properties = {}
     for (const name in typeConfig.properties) {
       const propertyConfig = typeConfig.properties[name]
-      properties[name] = Object.assign({}, propertyConfig)
+      if (propertyConfig.type === 'doc') {
+        properties[name] = Object.assign({}, propertyConfig, { docType: this.getType(propertyConfig.docType) })
+      } else {
+        properties[name] = Object.assign({}, propertyConfig)
+      }
     }
     return new DocumentType(typeName, properties)
   }

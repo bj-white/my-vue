@@ -1,6 +1,6 @@
-import Module from './Module'
-import startWebApp from './startWebApp'
-import applet from './assets/applet.json'
+import Module from './baseModule'
+import startWebApp from '../../../web-framework/lib/app/startWebApp'
+import applet from '../../../assets/applet.json'
 
 export default class BaseWebPage {
   async start () {
