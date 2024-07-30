@@ -51,4 +51,22 @@ export default class Document {
   setValue (prop, value) {
     Vue.set(this, prop, value)
   }
+
+  toggleReadonly (readonly) {
+    this.$options.readonly = readonly
+    const propertyDefList = Object.values(this.docType.propertyDefs)
+    for (const propertyDef of propertyDefList) {
+      const { propDesc: { type }, propName } = propertyDef
+      if (['doc'].includes(type)) {
+        const propValue = this[propName]
+        if (propValue instanceof Document) {
+          propValue.toggleReadonly(readonly)
+        } else if (Array.isArray(propValue)) {
+          propValue.forEach(item => {
+            item.toggleReadonly(readonly)
+          })
+        }
+      }
+    }
+  }
 }

@@ -24,15 +24,10 @@ export default {
       default: {}
     }
   },
-  created () {
-    console.log(this.dataProvider)
-    console.log(this.conextProvider, 'conextProvider=================')
-  },
+  created () {},
   methods: {
     handleClick () {
-      for (let i = 0; i < this.dataProvider.model.ejxb.length; i++) {
-        this.dataProvider.model.ejxb[i].$options.readonly = false
-      }
+      this.dataProvider.model.toggleReadonly(false)
     }
   }
 }
