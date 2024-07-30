@@ -4,13 +4,57 @@ import { applyRequestPlugin } from '../../../gcp-requests/src/index'
 import buildStoreContext from '../utils/context'
 import DataProvider from '../../../gcp-requests/src/components/DataProvider.vue'
 import { GCPUtils } from '../../../gcp-utils/lib/index'
+import Router from 'vue-router'
+import MetaView from '../../../meta-view/lib/components/MetaView.vue'
 
 export default class Module {
-  constructor ({ config }) {
+  constructor ({ config, views = [] }) {
     this.initialize(config)
+    this.viewDescs = this.buildViewDescs(views)
     this.store = this.createStore()
     this.context = this.createContext()
+    this.fns = this.context.fns
+    this.router = this.createRouter()
     console.log('module=========================', this)
+  }
+
+  buildViewDescs (views) {
+    const result = {}
+    views.forEach(view => {
+      result[view.metadata.name] = view.spec.template
+    })
+    return result
+  }
+
+  createRouter () {
+    const routes = this.buildRoutes()
+    return new Router({
+      routes
+    })
+  }
+
+  buildRoutes () {
+    const pages = this.config.pages
+    return pages.map(({ name, path, view, meta }) => {
+      const config = this.getViewDesc(view)
+      return {
+        name,
+        path,
+        component: MetaView,
+        props: {
+          config,
+          context: this.context,
+          scope: {
+            fns: this.fns,
+          }
+        },
+        meta
+      }
+    })
+  }
+
+  getViewDesc (name) {
+    return this.viewDescs[name]
   }
 
   initialize (config) {

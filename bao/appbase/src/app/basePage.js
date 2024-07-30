@@ -20,7 +20,7 @@ export default class BaseWebPage {
   }
 
   createModule (appletConfig) {
-    const { config } = appletConfig.spec
-    return new Module({ config })
+    const { config, views } = appletConfig.spec
+    return new Module({ config, views })
   }
 }
