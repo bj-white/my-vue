@@ -1,3 +1,0 @@
-const GCPUtils = {}
-
-export { GCPUtils }

@@ -13,8 +13,12 @@
       el: '#root',
       props: {
         name: {
-          type: String,
-          default: 'white'
+          type: Object,
+          default: function () {
+            return {
+              name: 1111
+            }
+          }
         }
       },
       data () {
@@ -69,7 +73,7 @@
         }
       },
       render (h) {
-        return h('div', this.comMsg)
+        return h('div', this.name.name)
       }
     })
     console.log(vm)
