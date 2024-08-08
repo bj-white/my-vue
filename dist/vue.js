@@ -1553,12 +1553,37 @@
 
   function initExtend (Vue) {
     Vue.cid = 0;
-    Vue.extend = function (extendOptions) {};
+    var cid = 1;
+    Vue.extend = function (extendOptions) {
+      extendOptions = extendOptions || {};
+      var Super = this;
+      var SuperId = Super.cid;
+      var name = extendOptions.name || Super.options.name;
+      var Sub = function VueComponent (options) {
+        this._init(options);
+      };
+      Sub.prototype = Object.create(Super.prototype);
+      Sub.prototype.constructor = Sub;
+      Sub.cid = cid++;
+      Sub.options = mergeOptions(Super.options, extendOptions);
+      return Sub
+    };
   }
 
   function initAssetRegisters (Vue) {
     ASSET_TYPES.forEach(function (type) {
-      Vue[type] = function () {};
+      Vue[type] = function (id, definition) {
+        if (!definition) {
+          console.log('todo.................');
+        } else {
+          if (type === 'component' && isPlainObject(definition)) {
+            definition.name = definition.name || id;
+            definition = this.options._base.extend(definition);
+          }
+          this.options[type + 's'][id] = definition;
+          return definition
+        }
+      };
     });
   }
 

@@ -9,18 +9,18 @@
   <script src="../dist/vue.js"></script>
   <script>
     console.dir(Vue)
-    const vm = new Vue({
-      el: '#root',
-      props: {
-        name: {
-          type: Object,
-          default: function () {
-            return {
-              name: 1111
-            }
-          }
+    Vue.component('my-com', {
+      data () {
+        return {
+          msg: 'aaa'
         }
       },
+      render (h) {
+        return h('div', this.msg)
+      }
+    })
+    const vm = new Vue({
+      el: '#root',
       data () {
         return {
           msg: 'hello world',
@@ -73,7 +73,7 @@
         }
       },
       render (h) {
-        return h('div', this.name.name)
+        return h('my-com', this.msg)
       }
     })
     console.log(vm)
