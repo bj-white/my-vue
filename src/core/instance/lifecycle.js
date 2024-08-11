@@ -72,7 +72,10 @@ export function initLifecycle (vm) {
   const options = vm.$options
   let parent = options.parent
   if (parent && !options.abstract) {
-    console.log('todo............')
+    while (parent.$options.abstract && parent.$parent) {
+      console.log('todo............')
+    }
+    parent.$children.push(vm)
   }
 
   vm.$parent = parent

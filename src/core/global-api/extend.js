@@ -1,4 +1,5 @@
 import { mergeOptions } from'../util/index'
+import { ASSET_TYPES } from 'shared/constants'
 
 export function initExtend (Vue) {
   Vue.cid = 0
@@ -15,6 +16,25 @@ export function initExtend (Vue) {
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
     Sub.options = mergeOptions(Super.options, extendOptions)
+    Sub['super'] = Super
+    if (Sub.options.props) {
+      console.log('todo..............')
+    }
+    if (Sub.options.computed) {
+      console.log('todo..................')
+    }
+    Sub.extend = Super.extend
+    Sub.mixin = Super.mixin
+    Sub.use = Super.use
+
+    ASSET_TYPES.forEach(function (type) {
+      Sub[type] = Super[type]
+    })
+    if (name) {
+      Sub.options.components[name] = Sub
+    }
+
+    Sub.superOptions = Super.options
     return Sub
   }
 }

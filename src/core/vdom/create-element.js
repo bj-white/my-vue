@@ -1,7 +1,8 @@
-import { isPrimitive, isTrue, isDef } from '../util/index'
+import { isPrimitive, isTrue, isDef, resloveAsset } from '../util/index'
 import { normalizeChildren } from './helpers/index'
 import config from '../config'
 import VNode from './vnode'
+import { createComponent } from './create-component'
 
 const SIMPLE_NORMALIZE = 1
 const ALWAYS_NORMALIZE = 2
@@ -49,8 +50,10 @@ export function _createElement (context, tag, data, children, normalizationType)
         undefined,
         context
       )
+    } else if ((!data || !data.pre) && isDef(Ctor = resloveAsset(context.$options, 'components', tag))) {
+      vnode = createComponent(Ctor, data, context, children, tag)
     } else {
-      console.log('todo..............')
+      console.log('todo...............')
     }
   } else {
     console.log('todo..................')

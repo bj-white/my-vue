@@ -55,6 +55,10 @@
     return str.replace(camelizeRE, function (_, c) { return c ? c.toUpperCase() : ''; })
   });
 
+  var capitalize = cached(function (str) {
+    return str.charAt(0).toUpperCase() + str.slice(1)
+  });
+
   function toNumber () {}
 
   function toString () {}
@@ -378,6 +382,21 @@
     if (dirs) {
       console.log('todo.............');
     }
+  }
+
+  function resloveAsset (options, type, id, warnMissing) {
+    if (typeof id !== 'string') {
+      return
+    }
+    var assets = options[type];
+    if (hasOwn(assets, id)) { return assets[id] }
+    var camelizedId = camelize(id);
+    if (hasOwn(assets, camelizedId)) { return assets[camelizedId] }
+    var PascalCaseId = capitalize(camelizedId);
+    if (hasOwn(assets, PascalCaseId)) { return assets[PascalCaseId] }
+    // fallback to prototype chain
+    var res = assets[id] || assets[camelizedId] || assets[PascalCaseId];
+    return res
   }
 
   var timerFunc;
@@ -829,7 +848,10 @@
     var options = vm.$options;
     var parent = options.parent;
     if (parent && !options.abstract) {
-      console.log('todo............');
+      while (parent.$options.abstract && parent.$parent) {
+        console.log('todo............');
+      }
+      parent.$children.push(vm);
     }
 
     vm.$parent = parent;
@@ -1340,6 +1362,116 @@
     console.log('todo................');
   }
 
+  function extractPropsFromVNodeData (data, Ctor, tag) {
+    var propOptions = Ctor.options.props;
+    if (isUndef(propOptions)) {
+      return
+    }
+    console.log('todo.....................');
+  }
+
+  var componentVNodeHooks = {
+    init: function init (vnode, hydrating) {
+      if (
+        vnode.componentInstance &&
+        !vnode.componentInstance._isDestroyed &&
+        vnode.data.keepAlive
+      ) {
+        console.log('todo..............');
+      } else {
+        var child = vnode.componentInstance = createComponentInstanceForVnode(vnode, activeInstance);
+      }
+    },
+    prepatch: function prepatch () {
+      console.log('todo..............');
+    },
+    insert: function insert () {
+      console.log('todo..............');
+    },
+    destroy: function destroy () {
+      console.log('todo..............');
+    }
+  };
+
+  var hooksToMerge = Object.keys(componentVNodeHooks);
+
+  function createComponentInstanceForVnode (vnode, parent) {
+    var options = {
+      _isComponent: true,
+      _parentVnode: vnode,
+      parent: parent
+    };
+    var inlineTemplate = vnode.data.inlineTemplate;
+    if (isDef(inlineTemplate)) {
+      console.log('todo...........');
+    }
+    return new vnode.componentOptions.Ctor(options)
+  }
+
+  function createComponent (Ctor, data, context, children, tag) {
+    var baseCtor = context.$options._base;
+    if (isObject(Ctor)) {
+      console.log('todo..............');
+    }
+    if (typeof Ctor !== 'function') {
+      return
+    }
+    var asyncFactory;
+    if (isUndef(Ctor.cid)) {
+      console.log('todo.................');
+    }
+    data = data || {};
+    resolveConstructorOptions(Ctor);
+
+    if (isDef(data.model)) {
+      console.log('todo...................');
+    }
+
+    var propsData = extractPropsFromVNodeData(data, Ctor);
+
+    if (isTrue(Ctor.options.functional)) {
+      console.log('todo................');
+    }
+
+    var listeners = data.on;
+    data.on = data.nativeOn;
+
+    if (isTrue(Ctor.options.abstract)) {
+      console.log('todo..............');
+    }
+
+    installComponentHooks(data);
+
+    var name = Ctor.options.name || tag;
+    var vnode = new VNode(
+      ("vue-component-" + (Ctor.cid) + (name ? ("-" + name) : '')),
+      data,
+      undefined, // children
+      undefined, // text
+      undefined, // el
+      context,
+      { Ctor: Ctor, propsData: propsData, listeners: listeners, tag: tag, children: children },
+      asyncFactory
+    );
+    return vnode
+  }
+
+  function installComponentHooks (data) {
+    var hooks = data.hook || (data.hook = {});
+    for (var i = 0; i < hooksToMerge.length; i++) {
+      var key = hooksToMerge[i];
+      var existing = hooks[key];
+      var toMerge = componentVNodeHooks[key];
+      if (existing !== toMerge && !(existing && existing._merged)) {
+        hooks[key] = existing ? mergeHook$1() : toMerge;
+      }
+    }
+  }
+
+  function mergeHook$1 () {
+    console.log('todo.................');
+  }
+
   var SIMPLE_NORMALIZE = 1;
   var ALWAYS_NORMALIZE = 2;
 
@@ -1375,6 +1507,7 @@
     }
     var vnode, ns;
     if (typeof tag === 'string') {
+      var Ctor;
       ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag);
       if (config.isReservedTag(tag)) {
         vnode = new VNode(
@@ -1385,8 +1518,10 @@
           undefined,
           context
         );
+      } else if ((!data || !data.pre) && isDef(Ctor = resloveAsset(context.$options, 'components', tag))) {
+        vnode = createComponent(Ctor, data, context, children, tag);
       } else {
-        console.log('todo..............');
+        console.log('todo...............');
       }
     } else {
       console.log('todo..................');
@@ -1485,7 +1620,7 @@
       vm._uid = uid$2++;
       vm._isVue = true;
       if (options && options._isComponent) {
-        console.log('todo.............');
+        initInternalComponent(vm, options);
       } else {
         vm.$options = mergeOptions(
           resolveConstructorOptions(vm.constructor),
@@ -1493,12 +1628,6 @@
           vm
         );
       }
-      /* // todo...........
-      if ("development" !== 'production') {
-        initProxy(vm)
-      } else {
-        vm._renderProxy = vm
-      } */
       vm._renderProxy = vm;
       vm._self = vm;
       initLifecycle(vm);
@@ -1516,10 +1645,31 @@
     };
   }
 
+  function initInternalComponent (vm, options) {
+    var opts = vm.$options = Object.create(vm.constructor.options);
+    var parentVnode = options._parentVnode;
+    opts.parent = options.parent;
+    options._parentVnode = parentVnode;
+    
+    var vnodeComponentOptions = parentVnode.componentOptions;
+    opts.propsData = vnodeComponentOptions.propsData;
+    opts._parentListeners = vnodeComponentOptions.listeners;
+    opts._renderChildren = vnodeComponentOptions.children;
+    opts._componentTag = vnodeComponentOptions.tag;
+
+    if (options.render) {
+      console.log('todo............');
+    }
+  }
+
   function resolveConstructorOptions (Ctor) {
     var options = Ctor.options;
     if (Ctor.super) {
-      console.log('todo.............');
+      var superOptions = resolveConstructorOptions(Ctor.super);
+      var cachedSuperOptions = Ctor.superOptions;
+      if (superOptions !== cachedSuperOptions) {
+        console.log('todo..............1');
+      }
     }
     return options
   }
@@ -1566,6 +1716,25 @@
       Sub.prototype.constructor = Sub;
       Sub.cid = cid++;
       Sub.options = mergeOptions(Super.options, extendOptions);
+      Sub['super'] = Super;
+      if (Sub.options.props) {
+        console.log('todo..............');
+      }
+      if (Sub.options.computed) {
+        console.log('todo..................');
+      }
+      Sub.extend = Super.extend;
+      Sub.mixin = Super.mixin;
+      Sub.use = Super.use;
+
+      ASSET_TYPES.forEach(function (type) {
+        Sub[type] = Super[type];
+      });
+      if (name) {
+        Sub.options.components[name] = Sub;
+      }
+
+      Sub.superOptions = Super.options;
       return Sub
     };
   }
@@ -1735,7 +1904,7 @@
         for (var i = 0; i < children.length; ++i) {
           createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children);
         }
-      } else {
+      } else if (isPrimitive(vnode.text)) {
         console.log('todo..................');
       }
     }
@@ -1755,7 +1924,12 @@
     function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
       var i = vnode.data;
       if (isDef(i)) {
-        console.log('todo...................');
+        if (isDef(i = i.hook) && isDef(i = i.init)) {
+          i(vnode, false);
+        }
+        if (isDef(vnode.componentInstance)) {
+          debugger
+        }
       }
     }
 

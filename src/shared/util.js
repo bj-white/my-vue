@@ -44,6 +44,10 @@ export const camelize = cached((str) => {
   return str.replace(camelizeRE, (_, c) => c ? c.toUpperCase() : '')
 })
 
+export const capitalize = cached((str) => {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+})
+
 export function toNumber () {}
 
 export function toString () {}

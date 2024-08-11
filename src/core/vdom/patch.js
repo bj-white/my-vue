@@ -1,4 +1,4 @@
-import { isUndef, isDef, isTrue } from '../util/index'
+import { isUndef, isDef, isTrue, isPrimitive } from '../util/index'
 import { SSR_ATTR } from 'shared/constants'
 import VNode from './vnode'
 import { activeInstance } from '../instance/lifecycle'
@@ -94,7 +94,7 @@ export function createPatchFunction (backend) {
       for (let i = 0; i < children.length; ++i) {
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i)
       }
-    } else {
+    } else if (isPrimitive(vnode.text)) {
       console.log('todo..................')
     }
   }
@@ -114,7 +114,12 @@ export function createPatchFunction (backend) {
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data
     if (isDef(i)) {
-      console.log('todo...................')
+      if (isDef(i = i.hook) && isDef(i = i.init)) {
+        i(vnode, false)
+      }
+      if (isDef(vnode.componentInstance)) {
+        debugger
+      }
     }
   }
 

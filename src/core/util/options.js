@@ -1,4 +1,4 @@
-import { hasOwn, camelize, isPlainObject, extend } from 'shared/util'
+import { hasOwn, camelize, capitalize, isPlainObject, extend } from 'shared/util'
 import config from '../config'
 import { ASSET_TYPES, LIFECYCLE_HOOKS } from 'shared/constants'
 import { nativeWatch } from './env'
@@ -201,4 +201,19 @@ function normalizeDirectives (options) {
   if (dirs) {
     console.log('todo.............')
   }
+}
+
+export function resloveAsset (options, type, id, warnMissing) {
+  if (typeof id !== 'string') {
+    return
+  }
+  const assets = options[type]
+  if (hasOwn(assets, id)) return assets[id]
+  const camelizedId = camelize(id)
+  if (hasOwn(assets, camelizedId)) return assets[camelizedId]
+  const PascalCaseId = capitalize(camelizedId)
+  if (hasOwn(assets, PascalCaseId)) return assets[PascalCaseId]
+  // fallback to prototype chain
+  const res = assets[id] || assets[camelizedId] || assets[PascalCaseId]
+  return res
 }

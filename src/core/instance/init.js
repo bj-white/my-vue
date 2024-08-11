@@ -13,7 +13,7 @@ export function initMinix (Vue) {
     vm._uid = uid++
     vm._isVue = true
     if (options && options._isComponent) {
-      console.log('todo.............')
+      initInternalComponent(vm, options)
     } else {
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
@@ -21,12 +21,6 @@ export function initMinix (Vue) {
         vm
       )
     }
-    /* // todo...........
-    if (process.env.NODE_ENV !== 'production') {
-      initProxy(vm)
-    } else {
-      vm._renderProxy = vm
-    } */
     vm._renderProxy = vm
     vm._self = vm
     initLifecycle(vm)
@@ -44,10 +38,31 @@ export function initMinix (Vue) {
   }
 }
 
+export function initInternalComponent (vm, options) {
+  const opts = vm.$options = Object.create(vm.constructor.options)
+  const parentVnode = options._parentVnode
+  opts.parent = options.parent
+  options._parentVnode = parentVnode
+  
+  const vnodeComponentOptions = parentVnode.componentOptions
+  opts.propsData = vnodeComponentOptions.propsData
+  opts._parentListeners = vnodeComponentOptions.listeners
+  opts._renderChildren = vnodeComponentOptions.children
+  opts._componentTag = vnodeComponentOptions.tag
+
+  if (options.render) {
+    console.log('todo............')
+  }
+}
+
 export function resolveConstructorOptions (Ctor) {
   const options = Ctor.options
   if (Ctor.super) {
-    console.log('todo.............')
+    const superOptions = resolveConstructorOptions(Ctor.super)
+    const cachedSuperOptions = Ctor.superOptions
+    if (superOptions !== cachedSuperOptions) {
+      console.log('todo..............1')
+    }
   }
   return options
 }
