@@ -73,7 +73,11 @@
         }
       },
       render (h) {
-        return h('div', this.msg)
+        // return h('my-com')
+        return h('div', {
+          style: { border: '1px solid #ddd' },
+          class: ['aaa', 'bbb']
+        }, this.msg)
       }
     })
     console.log(vm)
