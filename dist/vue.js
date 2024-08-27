@@ -124,6 +124,16 @@
     return v === undefined || v === null
   }
 
+  function toArray (list, start) {
+    start = start || 0;
+    var i = list.length - start;
+    var ret = new Array(i);
+    while (i--) {
+      ret[i] = list[i + start];
+    }
+    return ret
+  }
+
   var config = ({
     optionMergeStrategies: Object.create(null),
     silent: false,
@@ -1472,6 +1482,32 @@
     console.log('todo.................');
   }
 
+  var seenObjects = new Set();
+
+  function traverse (val) {
+    _traverse(val);
+    seenObjects.clear();
+  }
+
+  function _traverse (val, seen) {
+    var i, keys;
+    var isA = Array.isArray(val);
+    if (!isA && !isObject(val) || Object.isFrozen(val) || val instanceof VNode) {
+      console.log('todo...........');
+      return
+    }
+    if (val.__ob__) {
+      console.log('todo..................');
+    }
+    if (isA) {
+      console.log('todo...............');
+    } else {
+      keys = Object.keys(val);
+      i = keys.length;
+      while (i--) { _traverse(val[keys[i]]); }
+    }
+  }
+
   var SIMPLE_NORMALIZE = 1;
   var ALWAYS_NORMALIZE = 2;
 
@@ -1530,7 +1566,7 @@
       console.log('todo..........');
     } else if (isDef(vnode)) {
       if (isDef(ns)) { applyNS(); }
-      if (isDef(data)) { registerDeepBindings(); }
+      if (isDef(data)) { registerDeepBindings(data); }
       return vnode
     } else {
       console.log('todo................');
@@ -1542,7 +1578,12 @@
   }
 
   function registerDeepBindings (data) {
-    console.log('todo................');
+    if (isObject(data.style)) {
+      traverse(data.style);
+    }
+    if (isObject(data.class)) {
+      traverse(data.class);
+    }
   }
 
   var currentRenderingInstance = null;
@@ -1694,11 +1735,28 @@
   };
 
   function initUse (Vue) {
-    Vue.use = function (plugin) {};
+    Vue.use = function (plugin) {
+      var installedPlugins = (this._installedPlugins || (this._installedPlugins = []));
+      if (installedPlugins.indexOf(plugin) > -1) {
+        return this
+      }
+      var args = toArray(arguments, 1);
+      args.unshift(this);
+      if (typeof plugin.install === 'function') {
+        plugin.install.apply(plugin, args);
+      } else if (typeof plugin === 'function') {
+        plugin.apply(null, args);
+      }
+      installedPlugins.push(this);
+      return this
+    };
   }
 
   function initMixin (Vue) {
-    Vue.mixin = function (mixin) {};
+    Vue.mixin = function (mixin) {
+      this.options = mergeOptions(this.options, mixin);
+      return this
+    };
   }
 
   function initExtend (Vue) {

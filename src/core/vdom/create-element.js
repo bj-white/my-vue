@@ -1,8 +1,9 @@
-import { isPrimitive, isTrue, isDef, resloveAsset } from '../util/index'
+import { isPrimitive, isTrue, isDef, resloveAsset, isObject } from '../util/index'
 import { normalizeChildren } from './helpers/index'
 import config from '../config'
 import VNode from './vnode'
 import { createComponent } from './create-component'
+import { traverse } from '../observer/traverse'
 
 const SIMPLE_NORMALIZE = 1
 const ALWAYS_NORMALIZE = 2
@@ -74,5 +75,10 @@ function applyNS (vnode, ns, force) {
 }
 
 function registerDeepBindings (data) {
-  console.log('todo................')
+  if (isObject(data.style)) {
+    traverse(data.style)
+  }
+  if (isObject(data.class)) {
+    traverse(data.class)
+  }
 }
