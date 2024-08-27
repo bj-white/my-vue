@@ -16,14 +16,14 @@
         }
       },
       render (h) {
-        return h('div', this.msg)
+        return h('span', this.msg)
       }
     })
     const vm = new Vue({
       el: '#root',
       data () {
         return {
-          msg: 'hello world',
+          msg: '777',
           a: 1,
           b: 2,
           obj: {
@@ -73,7 +73,8 @@
         }
       },
       render (h) {
-        return h('div', this.msg)
+        // return h('div', this.msg)
+        return h('my-com')
       }
     })
     console.log(vm)
